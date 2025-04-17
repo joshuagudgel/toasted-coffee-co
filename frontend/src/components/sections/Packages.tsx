@@ -1,4 +1,5 @@
 import React from "react";
+import { useBooking } from "../../context/BookingContext";
 
 type Package = {
   id: number;
@@ -51,18 +52,20 @@ const coffeePackages: Package[] = [
 ];
 
 const Packages: React.FC = () => {
+  const { openModal } = useBooking();
+
   return (
-    <section className="py-20 bg-amber-50">
+    <section id="packages" className="py-20 bg-sage">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-amber-900 mb-4">
+          <h2 className="text-4xl font-bold text-terracotta mb-4">
             Our Packages
           </h2>
-          <p className="text-lg text-amber-700 max-w-2xl mx-auto">
+          <p className="text-lg text-espresso max-w-1/2 mx-auto">
             At Toasted Coffee Co, our goal is to elevate your event with an
             exceptional cold brew cart.
           </p>
-          <p className="text-lg text-amber-700 max-w-2xl mx-auto">
+          <p className="text-lg text-espresso max-w-1/2 mx-auto">
             Whether you're hosting a corporate gathering or celebrating a
             special occasion, we strive to deliver the perfect cup every time.
           </p>
@@ -72,25 +75,25 @@ const Packages: React.FC = () => {
           {coffeePackages.map((pkg) => (
             <div
               key={pkg.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1"
+              className="bg-parchment rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1"
             >
-              <div className="bg-amber-700 py-4">
-                <h3 className="text-2xl font-bold text-center text-white">
+              <div className="bg-terracotta py-4">
+                <h3 className="text-2xl font-bold text-center text-parchment">
                   {pkg.name}
                 </h3>
               </div>
               <div className="p-8">
-                <p className="text-3xl font-bold text-center mb-4 text-amber-900">
+                <p className="text-3xl font-bold text-center mb-4 text-espresso">
                   {pkg.price}
                 </p>
-                <p className="text-center mb-6 text-gray-600">
+                <p className="text-center mb-6 text-espresso">
                   {pkg.description}
                 </p>
                 <ul className="space-y-3 mb-8">
                   {pkg.features.map((feature, index) => (
                     <li key={index} className="flex items-center">
                       <svg
-                        className="w-5 h-5 text-amber-500 mr-2"
+                        className="w-5 h-5 text-peach mr-2"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -104,7 +107,10 @@ const Packages: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <button className="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg transition">
+                <button
+                  className="w-full py-3 bg-terracotta hover:bg-latte text-parchment hover:text-mocha font-bold rounded-lg transition"
+                  onClick={() => openModal(pkg.name)}
+                >
                   Select Package
                 </button>
               </div>
