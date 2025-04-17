@@ -7,20 +7,29 @@ export default {
   theme: {
     extend: {
       colors: {
+        'terracotta': '#BF7454',
+        'espresso': '#594A47',
+        'peach': '#DD9D79',
+        'parchment': '#F5F5EF',
+        'latte': '#FDE4CD',
+        'caramel': '#FDD39D',
+        'mocha': '#945F48',
+        'sage': '#D7E6E0',
+        
+        // Add shades for gradient and variation use
         'coffee': {
-          100: '#F5EBE0',
-          200: '#E6D7C3',
-          300: '#C8B6A6',
-          400: '#A4907C',
-          500: '#8D7B68',  // Primary brand color
-          600: '#735F4D',
-          700: '#5A4D3D',
-          800: '#4A3F32',
-          900: '#332A21',
+          100: '#F5F5EF', // parchment
+          200: '#FDE4CD', // latte
+          300: '#FDD39D', // caramel
+          400: '#DD9D79', // peach
+          500: '#BF7454', // terracotta (primary brand)
+          600: '#945F48', // mocha
+          700: '#594A47', // espresso
+          800: '#3A2618', // dark espresso (keeping this from original)
         },
-        'cream': '#FFF8E1',
-        'espresso': '#3A2618',
-        'toasted': '#D4A762', // Your brand gold/amber
+        
+        // Keep the toasted color for backward compatibility
+        'toasted': '#FDD39D', // updated to match your new caramel color
       }
     },
   },

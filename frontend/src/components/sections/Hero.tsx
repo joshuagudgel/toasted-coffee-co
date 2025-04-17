@@ -2,7 +2,7 @@ import React from "react";
 
 const Hero: React.FC = () => {
   return (
-    <div className="relative h-screen w-full bg-gradient-to-r from-amber-800 to-amber-600 overflow-hidden">
+    <div className="relative h-screen w-full bg-gradient-to-r from-espresso to-coffee-800 overflow-hidden">
       {/* Dark overlay for better text contrast */}
       <div className="absolute inset-0 bg-black/40"></div>
 
@@ -11,10 +11,10 @@ const Hero: React.FC = () => {
 
       {/* Content container */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-4 md:px-8">
-        <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 tracking-tight">
+        <h1 className="text-5xl md:text-7xl font-bold text-toasted mb-4 tracking-tight">
           Toasted Coffee Co
         </h1>
-        <p className="text-xl md:text-2xl text-amber-100 max-w-2xl mb-8">
+        <p className="text-cream text-xl md:text-2xl max-w-2xl mb-8">
           Cold Brew Bar
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
