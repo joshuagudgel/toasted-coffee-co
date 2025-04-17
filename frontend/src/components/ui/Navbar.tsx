@@ -10,7 +10,7 @@ const Navbar: React.FC = () => {
     <nav className="absolute top-0 left-0 z-20 w-full py-4 px-6">
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo */}
-        <div className="text-2xl font-bold text-mocha">Toasted Coffee Co</div>
+        <div className="text-2xl font-bold text-mocha">TOASTED COFFEE CO</div>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
