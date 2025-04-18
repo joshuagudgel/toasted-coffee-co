@@ -23,15 +23,22 @@ const Navbar: React.FC = () => {
           <a
             href="#"
             className="font-medium text-mocha hover:text-latte transition"
+            onClick={() => scrollToSection("packages")}
           >
-            About
+            Packages
           </a>
           <a
             href="#"
             className="font-medium text-mocha hover:text-latte transition"
-            onClick={() => scrollToSection("packages")}
+            onClick={() => scrollToSection("menu")}
           >
-            Packages
+            Menu
+          </a>
+          <a
+            href="#"
+            className="font-medium text-mocha hover:text-latte transition"
+          >
+            About
           </a>
           <a
             href="#"
