@@ -15,39 +15,21 @@ const coffeePackages: Package[] = [
     name: "Group",
     price: "$135",
     description: "Small gatherings up to 25 people",
-    features: [
-      "25 People",
-      "1 hour service",
-      "Cold brew based drinks",
-      "Paper goods",
-      "Setup/tear down (please allow 30 min.)",
-    ],
+    features: ["25 People", "1 hour service"],
   },
   {
     id: 2,
     name: "Crowd",
     price: "$275",
     description: "Ideal for gatherings of up to 50 people",
-    features: [
-      "50 People",
-      "1.5 hour service",
-      "Cold brew based drinks",
-      "Paper goods",
-      "Setup/tear down (please allow 30 min.)",
-    ],
+    features: ["50 People", "1.5 hour service"],
   },
   {
     id: 3,
     name: "Party",
     price: "$410",
     description: "Guarenteeing coffee for up to 75 people",
-    features: [
-      "75 People",
-      "2 hour service",
-      "Cold brew based drinks",
-      "Paper goods",
-      "Setup/tear down (please allow 30 min.)",
-    ],
+    features: ["75 People", "2 hour service"],
   },
 ];
 
@@ -61,13 +43,10 @@ const Packages: React.FC = () => {
           <h2 className="text-4xl font-bold text-terracotta mb-4">
             Our Packages
           </h2>
-          <p className="text-lg text-espresso max-w-1/2 mx-auto">
-            At Toasted Coffee Co, our goal is to elevate your event with an
-            exceptional cold brew cart.
-          </p>
-          <p className="text-lg text-espresso max-w-1/2 mx-auto">
-            Whether you're hosting a corporate gathering or celebrating a
-            special occasion, we strive to deliver the perfect cup every time.
+          <p className="text-lg text-espresso max-w-xl mx-auto">
+            We offer 3 basic packages but we understand that not every event is
+            the same. We can tailor to your event, email us with specifics and
+            we'll provide you a quote!
           </p>
         </div>
 
@@ -116,6 +95,15 @@ const Packages: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+        <div className="text-center my-16">
+          <p className="text-lg text-espresso max-w-xl mx-auto">
+            Every service includes cold brew based drinks, paper goods, and
+            setup/tear down (please allow 30 min.)
+          </p>
+          <p className="text-lg text-espresso max-w-xl mx-auto">
+            *Bookings must be made 2 weeks in advance
+          </p>
         </div>
       </div>
     </section>

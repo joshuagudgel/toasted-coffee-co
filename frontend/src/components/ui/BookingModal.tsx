@@ -5,7 +5,7 @@ type BookingFormData = {
   date: string;
   time: string;
   people: string;
-  coffeeType: string;
+  coffeeFlavor: string;
   milkOption: string;
   location: string;
   notes: string;
@@ -28,7 +28,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
     date: "",
     time: "",
     people: "",
-    coffeeType: "",
+    coffeeFlavor: "",
     milkOption: "",
     location: "",
     notes: "",
@@ -72,7 +72,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-parchment rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-terracotta text-parchment p-4 flex justify-between items-center">
           <h2 className="text-xl font-bold">Book Your Coffee Experience</h2>
           <button onClick={onClose} className="text-white hover:text-latte">
@@ -153,16 +153,16 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
             <div>
               <label className="block text-espresso font-medium mb-1">
-                Coffee Type
+                Coffee Flavor
               </label>
               <select
-                name="coffeeType"
-                value={formData.coffeeType}
+                name="coffeeFlavor"
+                value={formData.coffeeFlavor}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
                 required
               >
-                <option value="">Select Coffee Type</option>
+                <option value="">Select Coffee Flavor</option>
                 {coffeeOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}

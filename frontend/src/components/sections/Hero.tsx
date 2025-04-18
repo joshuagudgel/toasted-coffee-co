@@ -23,7 +23,7 @@ const Hero: React.FC = () => {
             View Packages
           </button>
           <button
-            className="px-8 py-3 bg-transparent text-parchment font-semibold border-2 border-parchment rounded-full hover:bg-latte hover:text-mocha transition-all"
+            className="px-8 py-3 bg-transparent text-parchment font-semibold border-2 border-parchment rounded-full hover:bg-latte hover:text-mocha hover:border-latte transition-all"
             onClick={() => openModal()}
           >
             Book Now
