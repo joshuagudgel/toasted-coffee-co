@@ -5,8 +5,8 @@ type BookingFormData = {
   date: string;
   time: string;
   people: string;
-  coffeeFlavor: string;
-  milkOption: string;
+  coffeeFlavors: string[];
+  milkOptions: string[];
   location: string;
   notes: string;
   package?: string;
@@ -28,12 +28,14 @@ const BookingModal: React.FC<BookingModalProps> = ({
     date: "",
     time: "",
     people: "",
-    coffeeFlavor: "",
-    milkOption: "",
+    coffeeFlavors: [],
+    milkOptions: [],
     location: "",
     notes: "",
     package: selectedPackage || "",
   });
+
+  console.log("Initial coffeeFlavor state:", formData.coffeeFlavors);
 
   const coffeeOptions = [
     { value: "french_toast", label: "French Toast" },
@@ -51,6 +53,33 @@ const BookingModal: React.FC<BookingModalProps> = ({
     { value: "rice", label: "Rice Milk" },
   ];
 
+  const handleCheckBoxChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "coffeeFlavors" | "milkOptions"
+  ) => {
+    const { value, checked } = e.target;
+
+    setFormData((prev) => {
+      if (checked) {
+        // add value to array
+        console.log("Adding value:", value, "to field:", field);
+        console.log("Previous state:", prev[field]);
+        return {
+          ...prev,
+          [field]: [...prev[field], value],
+        };
+      } else {
+        // revove value from array
+        console.log("Removing value:", value, "from field:", field);
+        console.log("Previous state:", prev[field]);
+        return {
+          ...prev,
+          [field]: prev[field].filter((item) => item !== value),
+        };
+      }
+    });
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -62,6 +91,16 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if at least one option is selected for each
+    if (
+      formData.coffeeFlavors.length === 0 ||
+      formData.milkOptions.length === 0
+    ) {
+      alert("Please select at least one coffee flavor and milk option");
+      return;
+    }
+
     console.log("Booking submitted:", formData);
     // Here you would typically send this data to your backend
     alert("Thank you for your booking request! We'll be in touch shortly.");
@@ -75,7 +114,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
       <div className="bg-parchment rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-terracotta text-parchment p-4 flex justify-between items-center">
           <h2 className="text-xl font-bold">Book Your Coffee Experience</h2>
-          <button onClick={onClose} className="text-white hover:text-latte">
+          <button onClick={onClose} className="text-parchment hover:text-latte">
             <svg
               className="w-6 h-6"
               fill="none"
@@ -151,44 +190,56 @@ const BookingModal: React.FC<BookingModalProps> = ({
               />
             </div>
 
-            <div>
-              <label className="block text-espresso font-medium mb-1">
-                Coffee Flavor
+            <div className="md:col-span-2">
+              <label className="block text-espresso font-medium mb-2">
+                Coffee Flavors (select all that apply)
               </label>
-              <select
-                name="coffeeFlavor"
-                value={formData.coffeeFlavor}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
-                required
-              >
-                <option value="">Select Coffee Flavor</option>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-3 rounded-md border border-gray-300">
                 {coffeeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+                  <div key={option.value} className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id={`coffee-${option.value}`}
+                      value={option.value}
+                      checked={formData.coffeeFlavors.includes(option.value)}
+                      onChange={(e) => handleCheckBoxChange(e, "coffeeFlavors")}
+                      className="h-4 w-4 text-terracotta border-gray-300 rounded focus:ring-terracotta mr-2"
+                    />
+                    <label
+                      htmlFor={`coffee-${option.value}`}
+                      className="text-espresso"
+                    >
+                      {option.label}
+                    </label>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-espresso font-medium mb-1">
-                Milk Option
+            <div className="md:col-span-2">
+              <label className="block text-espresso font-medium mb-2">
+                Milk Options (select all that apply)
               </label>
-              <select
-                name="milkOption"
-                value={formData.milkOption}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
-                required
-              >
-                <option value="">Select Milk Option</option>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-3 rounded-md border border-gray-300">
                 {milkOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+                  <div key={option.value} className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id={`milk-${option.value}`}
+                      value={option.value}
+                      checked={formData.milkOptions.includes(option.value)}
+                      onChange={(e) => handleCheckBoxChange(e, "milkOptions")}
+                      className="h-4 w-4 text-terracotta border-gray-300 rounded focus:ring-terracotta mr-2"
+                    />
+                    <label
+                      htmlFor={`coffee-${option.value}`}
+                      className="text-espresso"
+                    >
+                      {option.label}
+                    </label>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="md:col-span-2">
