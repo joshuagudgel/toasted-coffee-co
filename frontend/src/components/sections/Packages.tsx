@@ -14,7 +14,7 @@ const coffeePackages: Package[] = [
     id: 1,
     name: "Group",
     price: "$135",
-    description: "Small gatherings up to 25 people",
+    description: "Small gatherings of up to 25 people",
     features: ["25 People", "1 hour service"],
   },
   {
