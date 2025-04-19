@@ -40,8 +40,8 @@ const Packages: React.FC = () => {
     <section id="packages" className="py-20 bg-sage">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-terracotta mb-4">
-            Our Packages
+          <h2 className="text-4xl font-bold text-terracotta mb-4 tracking-tight">
+            Hand Crafted Service
           </h2>
           <p className="text-lg text-espresso max-w-xl mx-auto">
             We offer 3 basic packages but we understand that not every event is

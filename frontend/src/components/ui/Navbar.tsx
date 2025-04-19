@@ -34,18 +34,6 @@ const Navbar: React.FC = () => {
           >
             Menu
           </a>
-          <a
-            href="#"
-            className="font-medium text-mocha hover:text-latte transition"
-          >
-            About
-          </a>
-          <a
-            href="#"
-            className="font-medium text-mocha hover:text-latte transition"
-          >
-            Contact
-          </a>
           <button
             className="ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
             onClick={() => {
