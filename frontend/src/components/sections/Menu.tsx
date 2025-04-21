@@ -9,7 +9,7 @@ const Menu: React.FC = () => {
         <div className="mt-12 mx-auto max-w-4xl px-4 bg-parchment bg-opacity-90 rounded-xl p-8 shadow-lg">
           <h2 className="text-3xl md:text-4xl font-bold text-mocha mb-4 tracking-tight">
             {/*TODO: add logo image*/}
-            *LOGO*
+            TOASTED COFFEE CO
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
