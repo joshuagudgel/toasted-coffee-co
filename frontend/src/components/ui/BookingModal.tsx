@@ -89,7 +89,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Check if at least one option is selected for each
@@ -101,10 +101,29 @@ const BookingModal: React.FC<BookingModalProps> = ({
       return;
     }
 
-    console.log("Booking submitted:", formData);
-    // Here you would typically send this data to your backend
-    alert("Thank you for your booking request! We'll be in touch shortly.");
-    onClose();
+    // Before submitting:
+    const dataToSubmit = {
+      ...formData,
+      people: parseInt(formData.people, 10), // Convert string to number
+    };
+
+    try {
+      const response = await fetch("http://localhost:8080/api/v1/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSubmit),
+      });
+
+      if (!response.ok) throw new Error("Booking submission failed");
+
+      const data = await response.json();
+      console.log("Booking submitted:", data);
+      alert("Thank you for your booking request! We'll be in touch shortly.");
+      onClose();
+    } catch (error) {
+      console.error("Error:", error);
+      alert("There was a problem submitting your booking. Please try again.");
+    }
   };
 
   if (!isOpen) return null;
