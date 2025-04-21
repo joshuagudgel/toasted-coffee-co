@@ -232,7 +232,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                       className="h-4 w-4 text-terracotta border-gray-300 rounded focus:ring-terracotta mr-2"
                     />
                     <label
-                      htmlFor={`coffee-${option.value}`}
+                      htmlFor={`milk-${option.value}`}
                       className="text-espresso"
                     >
                       {option.label}
