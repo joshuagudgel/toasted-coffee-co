@@ -1,3 +1,6 @@
+###############################################
+# Common patterns
+###############################################
 # Dependencies
 /node_modules
 /.pnp
@@ -8,11 +11,25 @@
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
 
-# Production build files
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env*
+
+# Build and dist
 /dist
 /dist-ssr
 /build
@@ -22,21 +39,10 @@ yarn-error.log*
 /coverage
 .nyc_output
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Cache and logs
+# Cache
 .cache
 .eslintcache
-*.log
-logs/
 .npm
-.DS_Store
-Thumbs.db
 .turbo
 
 # TypeScript
@@ -49,13 +55,49 @@ Thumbs.db
 !.vscode/tasks.json
 !.vscode/launch.json
 .idea
+.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+Thumbs.db
 
 # Misc
-.DS_Store
 .vercel
 .netlify
+
+###############################################
+# Backend specific (Rails)
+###############################################
+# Bundler config
+/backend/.bundle
+
+# Logs and temp files
+/backend/log/*
+/backend/tmp/*
+!/backend/log/.keep
+!/backend/tmp/.keep
+
+# Pidfiles
+/backend/tmp/pids/*
+!/backend/tmp/pids/
+!/backend/tmp/pids/.keep
+
+# Storage
+/backend/storage/*
+!/backend/storage/.keep
+/backend/tmp/storage/*
+!/backend/tmp/storage/
+!/backend/tmp/storage/.keep
+
+# Rails credentials
+/backend/config/master.key
+
+###############################################
+# Frontend specific
+###############################################
+/frontend/node_modules
+/frontend/dist
+/frontend/dist-ssr
+/frontend/*.local
