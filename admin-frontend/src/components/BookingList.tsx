@@ -1,6 +1,5 @@
 // src/components/BookingList.tsx
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Booking } from "../types/booking";
 
 export default function BookingList() {
