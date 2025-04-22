@@ -101,3 +101,11 @@ Thumbs.db
 /frontend/dist
 /frontend/dist-ssr
 /frontend/*.local
+
+###############################################
+# Admin-Fronted specific
+###############################################
+/admin-frontend/node_modules
+/admin-frontend/dist
+/admin-frontend/dist-ssr
+/admin-frontend/*.local
