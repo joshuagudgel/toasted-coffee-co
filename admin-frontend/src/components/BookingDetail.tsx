@@ -7,13 +7,12 @@ export default function BookingDetail() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
   useEffect(() => {
     async function fetchBookingDetails() {
       try {
-        const response = await fetch(
-          `http://localhost:8080/api/v1/bookings/${id}`
-        );
+        const response = await fetch(`${API_URL}/api/v1/bookings/${id}`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch booking: ${response.status}`);

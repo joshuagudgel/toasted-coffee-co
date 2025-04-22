@@ -35,8 +35,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
     package: selectedPackage || "",
   });
 
-  console.log("Initial coffeeFlavor state:", formData.coffeeFlavors);
-
   const coffeeOptions = [
     { value: "french_toast", label: "French Toast" },
     { value: "dirty_vanilla_chai", label: "Dirty Vanilla Chai" },
@@ -92,6 +90,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+    console.log(API_URL);
     // Check if at least one option is selected for each
     if (
       formData.coffeeFlavors.length === 0 ||
@@ -108,7 +108,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
     };
 
     try {
-      const response = await fetch("http://localhost:8080/api/v1/bookings", {
+      const response = await fetch(`${API_URL}/api/v1/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSubmit),
