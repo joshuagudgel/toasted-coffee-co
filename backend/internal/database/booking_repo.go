@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -69,32 +70,50 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Bookin
 
 // GetAll retrieves all bookings
 func (r *BookingRepository) GetAll(ctx context.Context) ([]*models.Booking, error) {
+	log.Println("Starting GetAll query...")
+
 	rows, err := r.db.Pool.Query(ctx, `
         SELECT id, name, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
         FROM bookings
         ORDER BY date DESC
     `)
 	if err != nil {
-		return nil, err
+		log.Printf("Database query error: %v", err)
+		return nil, fmt.Errorf("database query error: %w", err)
 	}
 	defer rows.Close()
 
-	var bookings []*models.Booking
+	// Initialize as empty slice rather than nil to ensure we return [] instead of null
+	bookings := []*models.Booking{}
+	rowNum := 0
+
 	for rows.Next() {
+		rowNum++
 		booking := &models.Booking{}
-		if err := rows.Scan(
-			&booking.ID, &booking.Name, &booking.Date, &booking.Time, &booking.People,
+
+		var dateTime time.Time // Temporary variable for date
+
+		err := rows.Scan(
+			&booking.ID, &booking.Name, &dateTime, &booking.Time, &booking.People,
 			&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
 			&booking.Package, &booking.CreatedAt,
-		); err != nil {
-			return nil, err
+		)
+		if err != nil {
+			log.Printf("Error scanning row %d: %v", rowNum, err)
+			return nil, fmt.Errorf("error scanning row %d: %w", rowNum, err)
 		}
+
+		// Assign the date
+		booking.Date = dateTime.Format("2006-01-02")
+
 		bookings = append(bookings, booking)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		log.Printf("Error after scanning rows: %v", err)
+		return nil, fmt.Errorf("row iteration error: %w", err)
 	}
 
+	log.Printf("Successfully retrieved %d bookings", len(bookings))
 	return bookings, nil
 }

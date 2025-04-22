@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -67,12 +68,21 @@ func (h *BookingHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 // GetAll retrieves all bookings
 func (h *BookingHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	log.Println("Fetching all bookings")
+
 	bookings, err := h.repo.GetAll(r.Context())
 	if err != nil {
+		log.Printf("ERROR in GetAll: %v", err) // Log the actual error
 		http.Error(w, "Failed to retrieve bookings", http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("Found %d bookings", len(bookings))
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(bookings)
+	if err := json.NewEncoder(w).Encode(bookings); err != nil {
+		log.Printf("ERROR encoding response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
