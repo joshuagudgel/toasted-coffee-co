@@ -67,12 +67,6 @@ Thumbs.db
 .vercel
 .netlify
 
-###############################################
-# Backend specific (Rails)
-###############################################
-# Bundler config
-/backend/.bundle
-
 # Logs and temp files
 /backend/log/*
 /backend/tmp/*
@@ -91,8 +85,13 @@ Thumbs.db
 !/backend/tmp/storage/
 !/backend/tmp/storage/.keep
 
-# Rails credentials
-/backend/config/master.key
+# Go
+/backend/bin
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
 ###############################################
 # Frontend specific
