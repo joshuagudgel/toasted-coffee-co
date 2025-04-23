@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,13 +26,24 @@ func NewBookingHandler(repo *database.BookingRepository) *BookingHandler {
 // Create handles creation of a new booking
 func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var booking models.Booking
+
+	// Log the incoming request
+	body, _ := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Replace the body for later use
+	log.Printf("Received booking request: %s", string(body))
+
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
+		log.Printf("Error decoding request body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Log the decoded booking
+	log.Printf("Decoded booking: %+v", booking)
+
 	id, err := h.repo.Create(r.Context(), &booking)
 	if err != nil {
+		log.Printf("Error creating booking: %v", err)
 		http.Error(w, "Failed to create booking", http.StatusInternalServerError)
 		return
 	}

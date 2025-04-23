@@ -57,6 +57,28 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
+	// Check Database Connection
+	r.Get("/api/v1/db-check", func(w http.ResponseWriter, r *http.Request) {
+		// Test basic connectivity
+		if err := db.Pool.Ping(r.Context()); err != nil {
+			log.Printf("Database ping failed: %v", err)
+			http.Error(w, "Database connection error", http.StatusInternalServerError)
+			return
+		}
+
+		// Test a simple query
+		var result int
+		err := db.Pool.QueryRow(r.Context(), "SELECT 1").Scan(&result)
+		if err != nil || result != 1 {
+			log.Printf("Database query test failed: %v", err)
+			http.Error(w, "Database query error", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Database connection OK"))
+	})
+
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Server starting on %s", addr)
