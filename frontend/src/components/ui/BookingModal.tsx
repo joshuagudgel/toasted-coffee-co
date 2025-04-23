@@ -60,8 +60,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
     setFormData((prev) => {
       if (checked) {
         // add value to array
-        console.log("Adding value:", value, "to field:", field);
-        console.log("Previous state:", prev[field]);
         return {
           ...prev,
           [field]: [...prev[field], value],
@@ -114,8 +112,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
         body: JSON.stringify(dataToSubmit),
       });
 
-      if (!response.ok) throw new Error("Booking submission failed");
-
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Server error (${response.status}): ${errorText}`);
+        throw new Error(`Booking submission failed: ${response.status}`);
+      }
       const data = await response.json();
       console.log("Booking submitted:", data);
       alert("Thank you for your booking request! We'll be in touch shortly.");
