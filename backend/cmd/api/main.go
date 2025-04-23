@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -26,6 +29,25 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
+
+	// run database migrations
+	log.Println("Running database migrations...")
+	migrationSQL, err := os.ReadFile("internal/database/migrations/01_create_bookings_table.sql")
+	if err != nil {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	} else {
+		_, err = db.Pool.Exec(context.Background(), string(migrationSQL))
+		if err != nil {
+			// Check if error is because table already exists (which is fine)
+			if strings.Contains(err.Error(), "already exists") {
+				log.Println("Tables already exist, skipping migration")
+			} else {
+				log.Printf("Warning: Migration error: %v", err)
+			}
+		} else {
+			log.Println("Migration executed successfully")
+		}
+	}
 
 	// Initialize repositories
 	bookingRepo := database.NewBookingRepository(db)
