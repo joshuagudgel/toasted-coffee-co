@@ -2,16 +2,31 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import BookingList from "./components/BookingList";
 import BookingDetail from "./components/BookingDetail";
+import SignIn from "./components/SignIn";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Route for SignIn page */}
+          <Route path="/signin" element={<SignIn />} />
+
+          {/* Protected Route for the rest of the app */}
+          <Route 
+            path="/" 
+            element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>}>
           <Route index element={<BookingList />} />
           <Route path="booking/:id" element={<BookingDetail />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+    
   );
 }
