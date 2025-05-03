@@ -1,5 +1,5 @@
 ﻿# Toasted Coffee Co
-Cold brew coffee bar booking platform.
+Cold brew coffee bar booking platform
 
 ## Project Structure
 
