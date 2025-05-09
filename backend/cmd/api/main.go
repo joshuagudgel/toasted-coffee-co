@@ -58,11 +58,14 @@ func main() {
 			log.Println("Warning: ADMIN_PASSWORD_HASH environment variable not set, using default hash")
 		}
 
+		// Escape the hash for PostgreSQL by doubling the dollar signs
+		escapedHash := strings.ReplaceAll(passwordHash, "$", "$$")
+
 		// Replace the placeholder in the SQL file with the actual password hash
 		migrationSQL2 := strings.Replace(
 			string(migrationTemplate),
 			"ADMIN_USER_PASSWORD_HASH",
-			"'"+passwordHash+"'",
+			"'"+escapedHash+"'",
 			1,
 		)
 
