@@ -49,27 +49,9 @@ func main() {
 		}
 	}
 
-	migrationTemplate, err := os.ReadFile("internal/database/migrations/02_create_users_table.sql")
-	if err != nil {
-		log.Printf("Warning: Could not read migration file: %v", err)
-	} else {
-		passwordHash := os.Getenv("ADMIN_USER_PASSWORD_HASH")
-		if passwordHash == "" {
-			log.Println("Warning: ADMIN_PASSWORD_HASH environment variable not set, using default hash")
-		}
-
-		// Escape the hash for PostgreSQL by doubling the dollar signs
-		escapedHash := strings.ReplaceAll(passwordHash, "$", "$$")
-
-		// Replace the placeholder in the SQL file with the actual password hash
-		migrationSQL2 := strings.Replace(
-			string(migrationTemplate),
-			"ADMIN_USER_PASSWORD_HASH",
-			"'"+escapedHash+"'",
-			1,
-		)
-
-		_, err = db.Pool.Exec(context.Background(), string(migrationSQL2))
+	migrationSQL2, err := os.ReadFile("internal/database/migrations/02_create_users_table.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL2))
 		if err != nil {
 			// Check if error is because table already exists (which is fine)
 			if strings.Contains(err.Error(), "already exists") {
@@ -80,6 +62,28 @@ func main() {
 		} else {
 			log.Println("Migration 2 executed successfully")
 		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
+	log.Println("Setting up admin user...")
+	passwordHash := os.Getenv("ADMIN_USER_PASSWORD_HASH")
+	if passwordHash == "" {
+		log.Println("Warning: ADMIN_USER_PASSWORD_HASH not set")
+	}
+
+	// Use parameterized query for inserting admin user
+	_, err = db.Pool.Exec(context.Background(), `
+    	INSERT INTO users (username, password, role) 
+    	VALUES ($1, $2, $3) 
+    	ON CONFLICT (username) DO UPDATE SET 
+    	    password = $2,
+    	    role = $3
+`, "admin", passwordHash, "admin")
+	if err != nil {
+		log.Printf("Warning: Failed to create admin user: %v", err)
+	} else {
+		log.Println("Admin user created successfully")
 	}
 
 	// Initialize repositories
