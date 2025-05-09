@@ -32,28 +32,60 @@ func main() {
 
 	// run database migrations
 	log.Println("Running database migrations...")
-	migrationSQL, err := os.ReadFile("internal/database/migrations/01_create_bookings_table.sql")
+	migrationSQL1, err := os.ReadFile("internal/database/migrations/01_create_bookings_table.sql")
 	if err != nil {
 		log.Printf("Warning: Could not read migration file: %v", err)
 	} else {
-		_, err = db.Pool.Exec(context.Background(), string(migrationSQL))
+		_, err = db.Pool.Exec(context.Background(), string(migrationSQL1))
 		if err != nil {
 			// Check if error is because table already exists (which is fine)
 			if strings.Contains(err.Error(), "already exists") {
 				log.Println("Tables already exist, skipping migration")
 			} else {
-				log.Printf("Warning: Migration error: %v", err)
+				log.Printf("Warning: Migration 1 error: %v", err)
 			}
 		} else {
-			log.Println("Migration executed successfully")
+			log.Println("Migration 1 executed successfully")
+		}
+	}
+
+	migrationTemplate, err := os.ReadFile("internal/database/migrations/02_create_users_table.sql")
+	if err != nil {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	} else {
+		passwordHash := os.Getenv("ADMIN_USER_PASSWORD_HASH")
+		if passwordHash == "" {
+			log.Println("Warning: ADMIN_PASSWORD_HASH environment variable not set, using default hash")
+		}
+
+		// Replace the placeholder in the SQL file with the actual password hash
+		migrationSQL2 := strings.Replace(
+			string(migrationTemplate),
+			"ADMIN_USER_PASSWORD_HASH",
+			"'"+passwordHash+"'",
+			1,
+		)
+
+		_, err = db.Pool.Exec(context.Background(), string(migrationSQL2))
+		if err != nil {
+			// Check if error is because table already exists (which is fine)
+			if strings.Contains(err.Error(), "already exists") {
+				log.Println("Tables already exist, skipping migration")
+			} else {
+				log.Printf("Warning: Migration 2 error: %v", err)
+			}
+		} else {
+			log.Println("Migration 2 executed successfully")
 		}
 	}
 
 	// Initialize repositories
 	bookingRepo := database.NewBookingRepository(db)
+	userRepo := database.NewUserRepository(db)
 
 	// Initialize handlers
 	bookingHandler := handlers.NewBookingHandler(bookingRepo)
+	authHandler := handlers.NewAuthHandler(userRepo)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -65,11 +97,21 @@ func main() {
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Bookings
-		r.Route("/bookings", func(r chi.Router) {
-			r.Get("/", bookingHandler.GetAll)
-			r.Post("/", bookingHandler.Create)
-			r.Get("/{id}", bookingHandler.GetByID)
+		// Public routes (no auth required)
+		r.Post("/auth/login", authHandler.Login)
+		r.Post("/auth/refresh", authHandler.RefreshToken)
+
+		// Protected routes
+		r.Group(func(r chi.Router) {
+			r.Use(custommiddleware.JWTAuth)
+
+			// Bookings
+			r.Get("/bookings", bookingHandler.GetAll)
+			r.Post("/bookings", bookingHandler.Create)
+			r.Get("/bookings/{id}", bookingHandler.GetByID)
+
+			// Auth validation
+			r.Get("/auth/validate", authHandler.ValidateToken)
 		})
 	})
 

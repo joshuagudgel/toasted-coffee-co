@@ -1,17 +1,39 @@
 // src/components/BookingList.tsx
 import { useState, useEffect } from "react";
 import { Booking } from "../types/booking";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function BookingList() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
+  // TODO authorize API requests with JWT token
   useEffect(() => {
     async function fetchBookings() {
       try {
-        const response = await fetch(`${API_URL}/api/v1/bookings`);
+        // Get JWT token from localStorage
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          navigate("/signin");
+          return;
+        }
+        
+        const response = await fetch(`${API_URL}/api/v1/bookings`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem("authToken");
+          navigate("/signin");
+          return;
+        }
 
         if (!response.ok) {
           throw new Error(`Failed to fetch bookings: ${response.status}`);
@@ -26,8 +48,10 @@ export default function BookingList() {
       }
     }
 
-    fetchBookings();
-  }, []);
+    if( isAuthenticated) {
+      fetchBookings();
+    }
+  }, [isAuthenticated, navigate]);
 
   if (loading) return <p>Loading bookings...</p>;
   if (error) return <p className="text-red-500">Error: {error}</p>;

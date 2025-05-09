@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function SignIn() {
-  const [user, setUser] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,7 +21,7 @@ export default function SignIn() {
     setIsSubmitting(true);
     
     try {
-      const success = await login(user, password);
+      const success = await login(username, password);
       if (success) {
         navigate(from, { replace: true });
       } else {
@@ -57,8 +57,8 @@ export default function SignIn() {
             <input
               id="user"
               type="user"
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
               required
             />
