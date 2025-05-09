@@ -100,6 +100,7 @@ func main() {
 		// Public routes (no auth required)
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/auth/refresh", authHandler.RefreshToken)
+		r.Post("/bookings", bookingHandler.Create)
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
@@ -107,7 +108,6 @@ func main() {
 
 			// Bookings
 			r.Get("/bookings", bookingHandler.GetAll)
-			r.Post("/bookings", bookingHandler.Create)
 			r.Get("/bookings/{id}", bookingHandler.GetByID)
 
 			// Auth validation
