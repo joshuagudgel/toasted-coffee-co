@@ -14,6 +14,7 @@ import (
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/database"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/handlers"
 	custommiddleware "github.com/joshuagudgel/toasted-coffee/backend/internal/middleware"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -67,23 +68,46 @@ func main() {
 	}
 
 	log.Println("Setting up admin user...")
-	passwordHash := os.Getenv("ADMIN_USER_PASSWORD_HASH")
-	if passwordHash == "" {
-		log.Println("Warning: ADMIN_USER_PASSWORD_HASH not set")
-	}
 
-	// Use parameterized query for inserting admin user
-	_, err = db.Pool.Exec(context.Background(), `
-    	INSERT INTO users (username, password, role) 
-    	VALUES ($1, $2, $3) 
-    	ON CONFLICT (username) DO UPDATE SET 
-    	    password = $2,
-    	    role = $3
-`, "admin", passwordHash, "admin")
+	var count int
+	err = db.Pool.QueryRow(context.Background(), `
+	    SELECT COUNT(*) FROM users WHERE username = $1
+	`, "admin").Scan(&count)
+
+	// Replace your existing admin user creation code with this:
 	if err != nil {
-		log.Printf("Warning: Failed to create admin user: %v", err)
+		log.Printf("Warning: Failed to check for admin user: %v", err)
+	} else if count == 0 {
+		// Generate a fresh bcrypt hash directly in the code
+		rawHash, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+		if err != nil {
+			log.Printf("Warning: Failed to generate hash: %v", err)
+		} else {
+			// Insert with the freshly generated hash
+			_, err = db.Pool.Exec(context.Background(), `
+            INSERT INTO users (username, password, role) 
+            VALUES ($1, $2, $3)
+        `, "admin", string(rawHash), "admin")
+
+			if err != nil {
+				log.Printf("Warning: Failed to create admin user: %v", err)
+			} else {
+				// Verify what was stored
+				var storedHash string
+				err = db.Pool.QueryRow(context.Background(), `
+                SELECT password FROM users WHERE username = $1
+            `, "admin").Scan(&storedHash)
+				if err != nil {
+					log.Printf("Warning: Failed to retrieve hash: %v", err)
+				} else {
+					log.Printf("Admin user created successfully")
+					log.Printf("DEBUG - Generated hash: %s", string(rawHash))
+					log.Printf("DEBUG - Stored hash: %s", storedHash)
+				}
+			}
+		}
 	} else {
-		log.Println("Admin user created successfully")
+		log.Println("Admin user already exists, skipping password update")
 	}
 
 	// Initialize repositories
