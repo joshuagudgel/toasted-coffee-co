@@ -31,10 +31,10 @@ func (r *BookingRepository) Create(ctx context.Context, booking *models.Booking)
 
 	var id int
 	err = r.db.Pool.QueryRow(ctx, `
-        INSERT INTO bookings (name, date, time, people, location, notes, coffee_flavors, milk_options, package)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO bookings (name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id
-    `, booking.Name, parsedDate, booking.Time, booking.People, booking.Location,
+    `, booking.Name, booking.Email, booking.Phone, parsedDate, booking.Time, booking.People, booking.Location,
 		booking.Notes, booking.CoffeeFlavors, booking.MilkOptions, booking.Package).Scan(&id)
 
 	if err != nil {
@@ -49,11 +49,11 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Bookin
 	booking := &models.Booking{}
 
 	err := r.db.Pool.QueryRow(ctx, `
-        SELECT id, name, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
+        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
         FROM bookings 
         WHERE id = $1
     `, id).Scan(
-		&booking.ID, &booking.Name, &booking.Date, &booking.Time, &booking.People,
+		&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &booking.Date, &booking.Time, &booking.People,
 		&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
 		&booking.Package, &booking.CreatedAt,
 	)
@@ -72,11 +72,14 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Bookin
 func (r *BookingRepository) GetAll(ctx context.Context) ([]*models.Booking, error) {
 	log.Println("Starting GetAll query...")
 
-	rows, err := r.db.Pool.Query(ctx, `
-        SELECT id, name, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
+	query := `
+        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
         FROM bookings
         ORDER BY date DESC
-    `)
+    `
+	log.Println("Executing query:", query)
+
+	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
 		log.Printf("Database query error: %v", err)
 		return nil, fmt.Errorf("database query error: %w", err)
@@ -94,7 +97,7 @@ func (r *BookingRepository) GetAll(ctx context.Context) ([]*models.Booking, erro
 		var dateTime time.Time // Temporary variable for date
 
 		err := rows.Scan(
-			&booking.ID, &booking.Name, &dateTime, &booking.Time, &booking.People,
+			&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &dateTime, &booking.Time, &booking.People,
 			&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
 			&booking.Package, &booking.CreatedAt,
 		)

@@ -8,6 +8,8 @@ import (
 type Booking struct {
 	ID            int       `json:"id,omitempty"`
 	Name          string    `json:"name" validate:"required"`
+	Email         string    `json:"email"`
+	Phone         string    `json:"phone"`
 	Date          string    `json:"date" validate:"required"`
 	Time          string    `json:"time" validate:"required"`
 	People        int       `json:"people" validate:"required,min=1"`

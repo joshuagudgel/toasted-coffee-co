@@ -2,6 +2,8 @@ import React, { useState } from "react";
 
 type BookingFormData = {
   name: string;
+  email: string;
+  phone: string;
   date: string;
   time: string;
   people: string;
@@ -25,6 +27,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<BookingFormData>({
     name: "",
+    email: "",
+    phone: "",
     date: "",
     time: "",
     people: "",
@@ -87,6 +91,12 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // validate for data
+    if (formData.email === "" && formData.phone === "") {
+      alert("Please provide at least one contact method (email or phone).");
+      return;
+    }
 
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
     console.log(API_URL);
@@ -164,6 +174,32 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-espresso font-medium mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
+              />
+            </div>
+
+            <div>
+              <label className="block text-espresso font-medium mb-1">
+                Phone
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
               />
             </div>
 

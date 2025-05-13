@@ -53,6 +53,16 @@ export default function BookingDetail() {
           </div>
 
           <div>
+            <dt className="text-sm font-medium text-gray-500">
+              Contact Information
+            </dt>
+            <dd className="mt-1 text-gray-900">
+              {booking.email && <div>Email: {booking.email}</div>}
+              {booking.phone && <div>Phone: {booking.phone}</div>}
+            </dd>
+          </div>
+
+          <div>
             <dt className="text-sm font-medium text-gray-500">Date</dt>
             <dd className="mt-1 text-gray-900">{booking.date}</dd>
           </div>

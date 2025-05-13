@@ -29,12 +29,19 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	// Log the incoming request
 	body, _ := io.ReadAll(r.Body)
-	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Replace the body for later use
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
 	log.Printf("Received booking request: %s", string(body))
 
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
 		log.Printf("Error decoding request body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the booking email and phone
+	if booking.Email == "" && booking.Phone == "" {
+		log.Println("Booking rejected: no contact information provided")
+		http.Error(w, "Email or phone number is required", http.StatusBadRequest)
 		return
 	}
 

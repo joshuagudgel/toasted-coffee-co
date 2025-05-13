@@ -67,8 +67,24 @@ func main() {
 		log.Printf("Warning: Could not read migration file: %v", err)
 	}
 
-	log.Println("Setting up admin user...")
+	migrationSQL3, err := os.ReadFile("internal/database/migrations/03_add_contact_fields.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL3))
+		if err != nil {
+			// Check if error is because columns already exist (which is fine)
+			if strings.Contains(err.Error(), "already exists") {
+				log.Println("Columns already exist, skipping migration")
+			} else {
+				log.Printf("Warning: Migration 3 error: %v", err)
+			}
+		} else {
+			log.Println("Migration 3 executed successfully")
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
 
+	log.Println("Setting up admin user...")
 	var count int
 	err = db.Pool.QueryRow(context.Background(), `
 	    SELECT COUNT(*) FROM users WHERE username = $1

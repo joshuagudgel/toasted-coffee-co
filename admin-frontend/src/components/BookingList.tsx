@@ -22,11 +22,11 @@ export default function BookingList() {
           navigate("/signin");
           return;
         }
-        
+
         const response = await fetch(`${API_URL}/api/v1/bookings`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (response.status === 401) {
@@ -48,7 +48,7 @@ export default function BookingList() {
       }
     }
 
-    if( isAuthenticated) {
+    if (isAuthenticated) {
       fetchBookings();
     }
   }, [isAuthenticated, navigate]);
@@ -66,6 +66,7 @@ export default function BookingList() {
             <tr className="bg-gray-100 text-gray-700">
               <th className="py-3 px-4 text-left">ID</th>
               <th className="py-3 px-4 text-left">Name</th>
+              <th className="py-3 px-4 text-left">Contact</th>
               <th className="py-3 px-4 text-left">Date</th>
               <th className="py-3 px-4 text-left">Time</th>
               <th className="py-3 px-4 text-left">People</th>
@@ -87,6 +88,10 @@ export default function BookingList() {
                 <tr key={booking.id} className="border-t hover:bg-gray-50">
                   <td className="py-3 px-4">{booking.id}</td>
                   <td className="py-3 px-4">{booking.name}</td>
+                  <td className="py-3 px-4">
+                    {booking.email && <div>{booking.email}</div>}
+                    {booking.phone && <div>{booking.phone}</div>}
+                  </td>
                   <td className="py-3 px-4">{booking.date}</td>
                   <td className="py-3 px-4">{booking.time}</td>
                   <td className="py-3 px-4">{booking.people}</td>
