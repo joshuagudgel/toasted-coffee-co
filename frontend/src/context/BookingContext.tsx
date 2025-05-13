@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext } from "react";
 
 interface BookingContextType {
   isModalOpen: boolean;
-  selectedPackage: string | null;
+  selectedPackage: string;
   openModal: (packageName?: string) => void;
   closeModal: () => void;
 }
@@ -13,20 +13,26 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState("");
 
   const openModal = (packageName?: string) => {
-    setSelectedPackage(packageName || null);
+    setSelectedPackage(packageName || "");
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setSelectedPackage("");
   };
 
   return (
     <BookingContext.Provider
-      value={{ isModalOpen, selectedPackage, openModal, closeModal }}
+      value={{
+        isModalOpen,
+        selectedPackage,
+        openModal,
+        closeModal,
+      }}
     >
       {children}
     </BookingContext.Provider>

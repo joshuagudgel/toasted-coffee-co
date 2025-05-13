@@ -16,7 +16,7 @@ const AppContent = () => {
       <BookingModal
         isOpen={isModalOpen}
         onClose={closeModal}
-        selectedPackage={selectedPackage || undefined}
+        selectedPackage={selectedPackage}
       />
       <Menu />
       {/* Other sections will be added here later */}

@@ -112,8 +112,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
     // Before submitting:
     const dataToSubmit = {
       ...formData,
-      people: parseInt(formData.people, 10), // Convert string to number
+      people: parseInt(formData.people, 10),
+      package: selectedPackage || formData.package,
     };
+
+    console.log("Submitting booking with package:", dataToSubmit.package);
 
     try {
       const response = await fetch(`${API_URL}/api/v1/bookings`, {
@@ -325,7 +328,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
               ></textarea>
             </div>
 
-            {selectedPackage && (
+            {selectedPackage && selectedPackage.length > 0 && (
               <div className="md:col-span-2">
                 <div className="bg-latte/50 p-3 rounded-md">
                   <p className="text-espresso">
