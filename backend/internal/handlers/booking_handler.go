@@ -15,11 +15,11 @@ import (
 
 // BookingHandler handles HTTP requests related to bookings
 type BookingHandler struct {
-	repo *database.BookingRepository
+	repo database.BookingRepositoryInterface // Changed from *database.BookingRepository
 }
 
 // NewBookingHandler creates a new booking handler
-func NewBookingHandler(repo *database.BookingRepository) *BookingHandler {
+func NewBookingHandler(repo database.BookingRepositoryInterface) *BookingHandler {
 	return &BookingHandler{repo: repo}
 }
 
