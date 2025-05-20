@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/database"
@@ -45,6 +47,12 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err := time.Parse("2006-01-02", booking.Date)
+	if err != nil {
+		http.Error(w, "Invalid date format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
 	// Log the decoded booking
 	log.Printf("Decoded booking: %+v", booking)
 
@@ -65,25 +73,45 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // GetByID retrieves a booking by ID
 func (h *BookingHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
-	}
+    // Parse the ID from the URL
+    idStr := chi.URLParam(r, "id")
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        // Handle invalid ID format specifically
+        log.Printf("Invalid booking ID format: %s", idStr)
+        http.Error(w, "Invalid booking ID", http.StatusBadRequest)
+        return
+    }
 
-	booking, err := h.repo.GetByID(r.Context(), id)
-	if err != nil {
-		http.Error(w, "Failed to retrieve booking", http.StatusInternalServerError)
-		return
-	}
+    // Get the booking from the repository
+    booking, err := h.repo.GetByID(r.Context(), id)
+    if err != nil {
+        log.Printf("Error retrieving booking %d: %v", id, err)
+        
+        // Check for "not found" error specifically
+        if strings.Contains(err.Error(), "not found") {
+            http.Error(w, "Booking not found", http.StatusNotFound)
+            return
+        }
+        
+        // Return 500 for other errors
+        http.Error(w, "Failed to retrieve booking", http.StatusInternalServerError)
+        return
+    }
 
-	if booking == nil {
-		http.Error(w, "Booking not found", http.StatusNotFound)
-		return
-	}
+    // Check if booking is nil even without an error
+    if booking == nil {
+        http.Error(w, "Booking not found", http.StatusNotFound)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(booking)
+    // Return the booking as JSON
+    w.Header().Set("Content-Type", "application/json")
+    if err := json.NewEncoder(w).Encode(booking); err != nil {
+        log.Printf("Error encoding booking response: %v", err)
+        http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+        return
+    }
 }
 
 // GetAll retrieves all bookings
