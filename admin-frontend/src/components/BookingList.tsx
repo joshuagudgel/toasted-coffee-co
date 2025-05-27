@@ -4,7 +4,11 @@ import { Booking } from "../types/booking";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-export default function BookingList() {
+interface BookingListProps {
+  hiddenColumns?: string[];
+}
+
+export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,16 +68,36 @@ export default function BookingList() {
         <table className="min-w-full bg-white border rounded-lg">
           <thead>
             <tr className="bg-gray-100 text-gray-700">
-              <th className="py-3 px-4 text-left">ID</th>
-              <th className="py-3 px-4 text-left">Name</th>
-              <th className="py-3 px-4 text-left">Contact</th>
-              <th className="py-3 px-4 text-left">Date</th>
-              <th className="py-3 px-4 text-left">Time</th>
-              <th className="py-3 px-4 text-left">People</th>
-              <th className="py-3 px-4 text-left">Package</th>
-              <th className="py-3 px-4 text-left">Location</th>
-              <th className="py-3 px-4 text-left">Notes</th>
-              <th className="py-3 px-4 text-left">Created</th>
+              {!hiddenColumns.includes("id") && (
+                <th className="py-3 px-4 text-left">ID</th>
+              )}
+              {!hiddenColumns.includes("name") && (
+                <th className="py-3 px-4 text-left">Name</th>
+              )}
+              {!hiddenColumns.includes("contact") && (
+                <th className="py-3 px-4 text-left">Contact</th>
+              )}
+              {!hiddenColumns.includes("date") && (
+                <th className="py-3 px-4 text-left">Date</th>
+              )}
+              {!hiddenColumns.includes("time") && (
+                <th className="py-3 px-4 text-left">Time</th>
+              )}
+              {!hiddenColumns.includes("people") && (
+                <th className="py-3 px-4 text-left">People</th>
+              )}
+              {!hiddenColumns.includes("package") && (
+                <th className="py-3 px-4 text-left">Package</th>
+              )}
+              {!hiddenColumns.includes("location") && (
+                <th className="py-3 px-4 text-left">Location</th>
+              )}
+              {!hiddenColumns.includes("notes") && (
+                <th className="py-3 px-4 text-left">Notes</th>
+              )}
+              {!hiddenColumns.includes("createdAt") && (
+                <th className="py-3 px-4 text-left">Created</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -85,20 +109,44 @@ export default function BookingList() {
               </tr>
             ) : (
               bookings.map((booking) => (
-                <tr key={booking.id} className="border-t hover:bg-gray-50">
-                  <td className="py-3 px-4">{booking.id}</td>
-                  <td className="py-3 px-4">{booking.name}</td>
-                  <td className="py-3 px-4">
-                    {booking.email && <div>{booking.email}</div>}
-                    {booking.phone && <div>{booking.phone}</div>}
-                  </td>
-                  <td className="py-3 px-4">{booking.date}</td>
-                  <td className="py-3 px-4">{booking.time}</td>
-                  <td className="py-3 px-4">{booking.people}</td>
-                  <td className="py-3 px-4">{booking.package || "N/A"}</td>
-                  <td className="py-3 px-4">{booking.location}</td>
-                  <td className="py-3 px-4">{booking.notes}</td>
-                  <td className="py-3 px-4">{booking.createdAt}</td>
+                <tr
+                  key={booking.id}
+                  className="border-t hover:bg-gray-50 cursor-pointer"
+                  onClick={() => navigate(`/booking/${booking.id}`)}
+                >
+                  {!hiddenColumns.includes("id") && (
+                    <td className="py-3 px-4">{booking.id}</td>
+                  )}
+                  {!hiddenColumns.includes("name") && (
+                    <td className="py-3 px-4">{booking.name}</td>
+                  )}
+                  {!hiddenColumns.includes("contact") && (
+                    <td className="py-3 px-4">
+                      {booking.email && <div>{booking.email}</div>}
+                      {booking.phone && <div>{booking.phone}</div>}
+                    </td>
+                  )}
+                  {!hiddenColumns.includes("date") && (
+                    <td className="py-3 px-4">{booking.date}</td>
+                  )}
+                  {!hiddenColumns.includes("time") && (
+                    <td className="py-3 px-4">{booking.time}</td>
+                  )}
+                  {!hiddenColumns.includes("people") && (
+                    <td className="py-3 px-4">{booking.people}</td>
+                  )}
+                  {!hiddenColumns.includes("package") && (
+                    <td className="py-3 px-4">{booking.package || "N/A"}</td>
+                  )}
+                  {!hiddenColumns.includes("location") && (
+                    <td className="py-3 px-4">{booking.location}</td>
+                  )}
+                  {!hiddenColumns.includes("notes") && (
+                    <td className="py-3 px-4">{booking.notes}</td>
+                  )}
+                  {!hiddenColumns.includes("createdAt") && (
+                    <td className="py-3 px-4">{booking.createdAt}</td>
+                  )}
                 </tr>
               ))
             )}

@@ -12,12 +12,27 @@ export default function BookingDetail() {
   useEffect(() => {
     async function fetchBookingDetails() {
       try {
-        const response = await fetch(`${API_URL}/api/v1/bookings/${id}`);
-
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          setError("Not authenticated");
+          setLoading(false);
+          return;
+        }
+        const response = await fetch(`${API_URL}/api/v1/bookings/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.status === 401) {
+          setError("Unauthorized. Please sign in again.");
+          setLoading(false);
+          return;
+        }
         if (!response.ok) {
           throw new Error(`Failed to fetch booking: ${response.status}`);
         }
-
         const data = await response.json();
         setBooking(data);
       } catch (err) {

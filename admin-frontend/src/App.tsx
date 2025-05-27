@@ -15,18 +15,34 @@ export default function App() {
           <Route path="/signin" element={<SignIn />} />
 
           {/* Protected Route for the rest of the app */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>}>
-          <Route index element={<BookingList />} />
-          <Route path="booking/:id" element={<BookingDetail />} />
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route
+              index
+              element={
+                <BookingList
+                  hiddenColumns={[
+                    "id",
+                    "notes",
+                    "createdAt",
+                    "contact",
+                    "time",
+                    "people",
+                    "package",
+                  ]}
+                />
+              }
+            />
+            <Route path="booking/:id" element={<BookingDetail />} />
           </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
-    
   );
 }

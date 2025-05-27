@@ -48,12 +48,14 @@ func (r *BookingRepository) Create(ctx context.Context, booking *models.Booking)
 func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Booking, error) {
 	booking := &models.Booking{}
 
+	var dateTime time.Time
+
 	err := r.db.Pool.QueryRow(ctx, `
         SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
         FROM bookings 
         WHERE id = $1
     `, id).Scan(
-		&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &booking.Date, &booking.Time, &booking.People,
+		&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &dateTime, &booking.Time, &booking.People,
 		&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
 		&booking.Package, &booking.CreatedAt,
 	)
@@ -64,6 +66,9 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Bookin
 		}
 		return nil, err
 	}
+
+	// Assign the date as a string in YYYY-MM-DD format
+	booking.Date = dateTime.Format("2006-01-02")
 
 	return booking, nil
 }
