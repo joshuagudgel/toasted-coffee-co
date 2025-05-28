@@ -32,6 +32,11 @@ type MockBookingRepository struct {
 	// GetAll
 	GetAllFunc   func(context.Context) ([]*models.Booking, error)
 	GetAllCalled bool
+
+	// Delete
+	DeleteFunc   func(context.Context, int) error
+	DeleteCalled bool
+	DeleteArg    int
 }
 
 // Implement interface methods with tracking
@@ -50,6 +55,12 @@ func (m *MockBookingRepository) GetByID(ctx context.Context, id int) (*models.Bo
 func (m *MockBookingRepository) GetAll(ctx context.Context) ([]*models.Booking, error) {
 	m.GetAllCalled = true
 	return m.GetAllFunc(ctx)
+}
+
+func (m *MockBookingRepository) Delete(ctx context.Context, id int) error {
+	m.DeleteCalled = true
+	m.DeleteArg = id
+	return m.DeleteFunc(ctx, id)
 }
 
 // Verify interface implementation
@@ -414,6 +425,105 @@ func TestGetBookingByIDHandler(t *testing.T) {
 				if booking.Name == "" {
 					t.Error("Expected non-empty booking name")
 				}
+			}
+
+			// Check error message if expected
+			if tc.expectedErr != "" {
+				responseBody := w.Body.String()
+				if !strings.Contains(responseBody, tc.expectedErr) {
+					t.Errorf("Expected error '%s', got '%s'", tc.expectedErr, responseBody)
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteBookingHandler(t *testing.T) {
+	tests := []struct {
+		name            string
+		bookingID       string
+		mockGetByIDFunc func(context.Context, int) (*models.Booking, error)
+		mockDeleteFunc  func(context.Context, int) error
+		expectedStatus  int
+		expectedErr     string
+	}{
+		{
+			name:      "Valid booking ID",
+			bookingID: "123",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User"}, nil
+			},
+			mockDeleteFunc: func(ctx context.Context, id int) error {
+				return nil
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name:      "Non-existent booking ID",
+			bookingID: "999",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return nil, nil
+			},
+			mockDeleteFunc: func(ctx context.Context, id int) error {
+				return nil // Should not be called
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedErr:    "Booking not found",
+		},
+		{
+			name:      "Invalid booking ID format",
+			bookingID: "abc",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return nil, nil // Should not be called
+			},
+			mockDeleteFunc: func(ctx context.Context, id int) error {
+				return nil // Should not be called
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedErr:    "Invalid booking ID",
+		},
+		{
+			name:      "Database error on delete",
+			bookingID: "123",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User"}, nil
+			},
+			mockDeleteFunc: func(ctx context.Context, id int) error {
+				return fmt.Errorf("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedErr:    "Failed to delete booking",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mock repository
+			mockRepo := &MockBookingRepository{
+				GetByIDFunc: tc.mockGetByIDFunc,
+				DeleteFunc:  tc.mockDeleteFunc,
+			}
+
+			// Create handler with mock
+			handler := handlers.NewBookingHandler(mockRepo)
+
+			// Create request with URL parameter
+			req := httptest.NewRequest("DELETE", "/api/v1/bookings/"+tc.bookingID, nil)
+
+			// Setup chi context with URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.bookingID)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Call handler
+			handler.Delete(w, req)
+
+			// Check status code
+			if w.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tc.expectedStatus, w.Code)
 			}
 
 			// Check error message if expected

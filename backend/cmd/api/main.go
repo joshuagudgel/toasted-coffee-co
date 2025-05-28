@@ -151,11 +151,12 @@ func main() {
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
-			r.Use(custommiddleware.JWTAuth)
+			r.Use(custommiddleware.JWTAuth) // This takes care of authentication
 
 			// Bookings
 			r.Get("/bookings", bookingHandler.GetAll)
 			r.Get("/bookings/{id}", bookingHandler.GetByID)
+			r.Delete("/bookings/{id}", bookingHandler.Delete)
 
 			// Auth validation
 			r.Get("/auth/validate", authHandler.ValidateToken)

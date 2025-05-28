@@ -125,3 +125,23 @@ func (r *BookingRepository) GetAll(ctx context.Context) ([]*models.Booking, erro
 	log.Printf("Successfully retrieved %d bookings", len(bookings))
 	return bookings, nil
 }
+
+// Delete removes a booking from the database
+func (r *BookingRepository) Delete(ctx context.Context, id int) error {
+	// Execute the delete query
+	commandTag, err := r.db.Pool.Exec(ctx, `
+        DELETE FROM bookings 
+        WHERE id = $1
+    `, id)
+
+	if err != nil {
+		return err
+	}
+
+	// Check if any rows were affected
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("booking not found")
+	}
+
+	return nil
+}

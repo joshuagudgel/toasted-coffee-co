@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Booking } from "../types/booking";
 
 export default function BookingDetail() {
@@ -7,7 +7,9 @@ export default function BookingDetail() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchBookingDetails() {
@@ -18,13 +20,11 @@ export default function BookingDetail() {
           setLoading(false);
           return;
         }
-        const response = await fetch(`${API_URL}/api/v1/bookings/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/api/v1/bookings/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (response.status === 401) {
           setError("Unauthorized. Please sign in again.");
           setLoading(false);
@@ -43,7 +43,52 @@ export default function BookingDetail() {
     }
 
     fetchBookingDetails();
-  }, [id]);
+  }, [id, API_URL]);
+
+  // Handle deletion
+  const handleDelete = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this booking? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Not authenticated");
+        setIsDeleting(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/v1/bookings/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        alert("Unauthorized. Please sign in again.");
+        setIsDeleting(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete booking: ${response.status}`);
+      }
+
+      alert("Booking deleted successfully");
+      navigate("/"); // Redirect to booking list
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error deleting booking");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (loading) return <p>Loading booking details...</p>;
   if (error) return <p className="text-red-500">Error: {error}</p>;
@@ -135,6 +180,17 @@ export default function BookingDetail() {
             </dd>
           </div>
         </dl>
+      </div>
+
+      {/* Delete button at the bottom */}
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+        >
+          {isDeleting ? "Deleting..." : "Delete Booking"}
+        </button>
       </div>
     </div>
   );

@@ -11,4 +11,5 @@ type BookingRepositoryInterface interface {
 	Create(ctx context.Context, booking *models.Booking) (int, error)
 	GetByID(ctx context.Context, id int) (*models.Booking, error)
 	GetAll(ctx context.Context) ([]*models.Booking, error)
+	Delete(ctx context.Context, id int) error
 }

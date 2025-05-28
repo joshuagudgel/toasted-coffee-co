@@ -73,45 +73,45 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // GetByID retrieves a booking by ID
 func (h *BookingHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-    // Parse the ID from the URL
-    idStr := chi.URLParam(r, "id")
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        // Handle invalid ID format specifically
-        log.Printf("Invalid booking ID format: %s", idStr)
-        http.Error(w, "Invalid booking ID", http.StatusBadRequest)
-        return
-    }
+	// Parse the ID from the URL
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		// Handle invalid ID format specifically
+		log.Printf("Invalid booking ID format: %s", idStr)
+		http.Error(w, "Invalid booking ID", http.StatusBadRequest)
+		return
+	}
 
-    // Get the booking from the repository
-    booking, err := h.repo.GetByID(r.Context(), id)
-    if err != nil {
-        log.Printf("Error retrieving booking %d: %v", id, err)
-        
-        // Check for "not found" error specifically
-        if strings.Contains(err.Error(), "not found") {
-            http.Error(w, "Booking not found", http.StatusNotFound)
-            return
-        }
-        
-        // Return 500 for other errors
-        http.Error(w, "Failed to retrieve booking", http.StatusInternalServerError)
-        return
-    }
+	// Get the booking from the repository
+	booking, err := h.repo.GetByID(r.Context(), id)
+	if err != nil {
+		log.Printf("Error retrieving booking %d: %v", id, err)
 
-    // Check if booking is nil even without an error
-    if booking == nil {
-        http.Error(w, "Booking not found", http.StatusNotFound)
-        return
-    }
+		// Check for "not found" error specifically
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Booking not found", http.StatusNotFound)
+			return
+		}
 
-    // Return the booking as JSON
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(booking); err != nil {
-        log.Printf("Error encoding booking response: %v", err)
-        http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-        return
-    }
+		// Return 500 for other errors
+		http.Error(w, "Failed to retrieve booking", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if booking is nil even without an error
+	if booking == nil {
+		http.Error(w, "Booking not found", http.StatusNotFound)
+		return
+	}
+
+	// Return the booking as JSON
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(booking); err != nil {
+		log.Printf("Error encoding booking response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetAll retrieves all bookings
@@ -133,4 +133,53 @@ func (h *BookingHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
+}
+
+// Delete removes a booking
+func (h *BookingHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	// Parse booking ID from the URL
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("Invalid booking ID format: %s", idStr)
+		http.Error(w, "Invalid booking ID", http.StatusBadRequest)
+		return
+	}
+
+	// Check if the booking exists first
+	booking, err := h.repo.GetByID(r.Context(), id)
+	if err != nil {
+		log.Printf("Error checking booking existence %d: %v", id, err)
+
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Booking not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to check booking", http.StatusInternalServerError)
+		return
+	}
+
+	// If booking is nil, it doesn't exist
+	if booking == nil {
+		http.Error(w, "Booking not found", http.StatusNotFound)
+		return
+	}
+
+	// Delete the booking
+	err = h.repo.Delete(r.Context(), id)
+	if err != nil {
+		log.Printf("Error deleting booking %d: %v", id, err)
+
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Booking not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to delete booking", http.StatusInternalServerError)
+		return
+	}
+
+	// Return success with no content
+	w.WriteHeader(http.StatusNoContent) // 204 status code indicates successful deletion with no content to return
 }
