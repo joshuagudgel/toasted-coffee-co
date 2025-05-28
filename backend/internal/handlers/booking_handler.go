@@ -183,3 +183,72 @@ func (h *BookingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	// Return success with no content
 	w.WriteHeader(http.StatusNoContent) // 204 status code indicates successful deletion with no content to return
 }
+
+// Update modifies an existing booking
+func (h *BookingHandler) Update(w http.ResponseWriter, r *http.Request) {
+	// Parse booking ID from the URL
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("Invalid booking ID format: %s", idStr)
+		http.Error(w, "Invalid booking ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body
+	var booking models.Booking
+
+	// Log the incoming request
+	body, _ := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
+	log.Printf("Received booking update request: %s", string(body))
+
+	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate booking data (same validation as Create)
+	if booking.Email == "" && booking.Phone == "" {
+		log.Println("Booking update rejected: no contact information provided")
+		http.Error(w, "Email or phone number is required", http.StatusBadRequest)
+		return
+	}
+
+	_, err = time.Parse("2006-01-02", booking.Date)
+	if err != nil {
+		http.Error(w, "Invalid date format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	if len(booking.CoffeeFlavors) < 1 {
+		http.Error(w, "At least one coffee flavor is required", http.StatusBadRequest)
+		return
+	}
+
+	if len(booking.MilkOptions) < 1 {
+		http.Error(w, "At least one milk option is required", http.StatusBadRequest)
+		return
+	}
+
+	// Update the booking
+	err = h.repo.Update(r.Context(), id, &booking)
+	if err != nil {
+		log.Printf("Error updating booking: %v", err)
+
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Booking not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to update booking", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Booking updated successfully",
+	})
+}

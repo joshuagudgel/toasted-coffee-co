@@ -145,3 +145,32 @@ func (r *BookingRepository) Delete(ctx context.Context, id int) error {
 
 	return nil
 }
+
+// Update modifies an existing booking
+func (r *BookingRepository) Update(ctx context.Context, id int, booking *models.Booking) error {
+	// Parse date string to time.Time
+	parsedDate, err := time.Parse("2006-01-02", booking.Date)
+	if err != nil {
+		return fmt.Errorf("invalid date format: %w", err)
+	}
+
+	commandTag, err := r.db.Pool.Exec(ctx, `
+        UPDATE bookings 
+        SET name = $1, email = $2, phone = $3, date = $4, time = $5, 
+            people = $6, location = $7, notes = $8, coffee_flavors = $9, 
+            milk_options = $10, package = $11
+        WHERE id = $12
+    `, booking.Name, booking.Email, booking.Phone, parsedDate, booking.Time,
+		booking.People, booking.Location, booking.Notes, booking.CoffeeFlavors,
+		booking.MilkOptions, booking.Package, id)
+
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("booking not found")
+	}
+
+	return nil
+}
