@@ -133,6 +133,22 @@ const BookingModal: React.FC<BookingModalProps> = ({
       const data = await response.json();
       console.log("Booking submitted:", data);
       alert("Thank you for your booking request! We'll be in touch shortly.");
+      
+      // Reset form data to initial state
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        date: "",
+        time: "",
+        people: "",
+        coffeeFlavors: [],
+        milkOptions: [],
+        location: "",
+        notes: "",
+        package: "",  // Or keep selectedPackage if you want
+      });
+      
       onClose();
     } catch (error) {
       console.error("Error:", error);
