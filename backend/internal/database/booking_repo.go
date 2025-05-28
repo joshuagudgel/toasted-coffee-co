@@ -80,7 +80,7 @@ func (r *BookingRepository) GetAll(ctx context.Context) ([]*models.Booking, erro
 	query := `
         SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
         FROM bookings
-        ORDER BY date DESC
+        ORDER BY date DESC, time ASC
     `
 	log.Println("Executing query:", query)
 
