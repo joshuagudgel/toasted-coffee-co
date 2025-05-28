@@ -157,6 +157,7 @@ func main() {
 			r.Get("/bookings", bookingHandler.GetAll)
 			r.Get("/bookings/{id}", bookingHandler.GetByID)
 			r.Delete("/bookings/{id}", bookingHandler.Delete)
+			r.Put("/bookings/{id}", bookingHandler.Update)
 
 			// Auth validation
 			r.Get("/auth/validate", authHandler.ValidateToken)

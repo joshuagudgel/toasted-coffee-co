@@ -37,6 +37,12 @@ type MockBookingRepository struct {
 	DeleteFunc   func(context.Context, int) error
 	DeleteCalled bool
 	DeleteArg    int
+
+	// Update
+	UpdateFunc    func(context.Context, int, *models.Booking) error
+	UpdateCalled  bool
+	UpdateID      int
+	UpdateBooking *models.Booking
 }
 
 // Implement interface methods with tracking
@@ -61,6 +67,15 @@ func (m *MockBookingRepository) Delete(ctx context.Context, id int) error {
 	m.DeleteCalled = true
 	m.DeleteArg = id
 	return m.DeleteFunc(ctx, id)
+}
+func (m *MockBookingRepository) Update(ctx context.Context, id int, booking *models.Booking) error {
+	m.UpdateCalled = true
+	m.UpdateID = id
+	m.UpdateBooking = booking
+	if m.UpdateFunc != nil {
+		return m.UpdateFunc(ctx, id, booking)
+	}
+	return nil
 }
 
 // Verify interface implementation
