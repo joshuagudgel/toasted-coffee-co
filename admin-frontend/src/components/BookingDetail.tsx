@@ -28,6 +28,7 @@ export default function BookingDetail() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const navigate = useNavigate();
 
@@ -222,6 +223,67 @@ export default function BookingDetail() {
       alert(err instanceof Error ? err.message : "Error deleting booking");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Archive/unarchive booking function
+  const handleArchiveToggle = async () => {
+    if (
+      !window.confirm(
+        booking?.archived
+          ? "Are you sure you want to unarchive this booking?"
+          : "Are you sure you want to archive this booking?"
+      )
+    ) {
+      return;
+    }
+
+    setIsArchiving(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Not authenticated");
+        setIsArchiving(false);
+        return;
+      }
+
+      const endpoint = booking?.archived
+        ? `${API_URL}/api/v1/bookings/${id}/unarchive`
+        : `${API_URL}/api/v1/bookings/${id}/archive`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        alert("Unauthorized. Please sign in again.");
+        setIsArchiving(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to ${booking?.archived ? "unarchive" : "archive"} booking: ${
+            response.status
+          }`
+        );
+      }
+
+      alert(
+        `Booking ${booking?.archived ? "unarchived" : "archived"} successfully`
+      );
+      navigate("/"); // Redirect to booking list
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : `Error ${booking?.archived ? "unarchiving" : "archiving"} booking`
+      );
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -519,7 +581,24 @@ export default function BookingDetail() {
 
       {/* Delete button - only shown when not in edit mode */}
       {!isEditing && (
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end space-x-2">
+          <button
+            onClick={handleArchiveToggle}
+            disabled={isArchiving}
+            className={`px-4 py-2 text-white rounded disabled:opacity-50 ${
+              booking.archived
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-amber-600 hover:bg-amber-700"
+            }`}
+          >
+            {isArchiving
+              ? booking.archived
+                ? "Unarchiving..."
+                : "Archiving..."
+              : booking.archived
+              ? "Unarchive Booking"
+              : "Archive Booking"}
+          </button>
           <button
             onClick={handleDelete}
             disabled={isDeleting}

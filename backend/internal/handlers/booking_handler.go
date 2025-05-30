@@ -75,6 +75,8 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *BookingHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// Parse the ID from the URL
 	idStr := chi.URLParam(r, "id")
+	log.Printf("GetByID request for booking: %s", idStr)
+
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		// Handle invalid ID format specifically
@@ -101,6 +103,7 @@ func (h *BookingHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	// Check if booking is nil even without an error
 	if booking == nil {
+		log.Printf("Booking not found with ID: %d", id)
 		http.Error(w, "Booking not found", http.StatusNotFound)
 		return
 	}
@@ -116,11 +119,12 @@ func (h *BookingHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 // GetAll retrieves all bookings
 func (h *BookingHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	log.Println("Fetching all bookings")
+	includeArchived := r.URL.Query().Get("include_archived") == "true"
+	log.Printf("Fetching bookings, includeArchived: %v", includeArchived)
 
-	bookings, err := h.repo.GetAll(r.Context())
+	bookings, err := h.repo.GetAll(r.Context(), includeArchived)
 	if err != nil {
-		log.Printf("ERROR in GetAll: %v", err) // Log the actual error
+		log.Printf("ERROR in GetAll: %v", err)
 		http.Error(w, "Failed to retrieve bookings", http.StatusInternalServerError)
 		return
 	}
@@ -195,13 +199,21 @@ func (h *BookingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get current booking to check for archive status changes
+	currentBooking, err := h.repo.GetByID(r.Context(), id)
+	if err != nil || currentBooking == nil {
+		log.Printf("Cannot find booking to update: %d", id)
+		http.Error(w, "Booking not found", http.StatusNotFound)
+		return
+	}
+
 	// Parse request body
 	var booking models.Booking
 
 	// Log the incoming request
 	body, _ := io.ReadAll(r.Body)
 	r.Body = io.NopCloser(bytes.NewBuffer(body))
-	log.Printf("Received booking update request: %s", string(body))
+	log.Printf("Received booking update request for ID %d: %s", id, string(body))
 
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
 		log.Printf("Error decoding request body: %v", err)
@@ -232,10 +244,19 @@ func (h *BookingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Track archive status changes
+	if currentBooking.Archived != booking.Archived {
+		if booking.Archived {
+			log.Printf("Booking %d is being archived via update", id)
+		} else {
+			log.Printf("Booking %d is being unarchived via update", id)
+		}
+	}
+
 	// Update the booking
 	err = h.repo.Update(r.Context(), id, &booking)
 	if err != nil {
-		log.Printf("Error updating booking: %v", err)
+		log.Printf("Error updating booking %d: %v", id, err)
 
 		if strings.Contains(err.Error(), "not found") {
 			http.Error(w, "Booking not found", http.StatusNotFound)
@@ -246,9 +267,109 @@ func (h *BookingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Successfully updated booking %d (archived status: %v)", id, booking.Archived)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Booking updated successfully",
 	})
+}
+
+// Archive marks a booking as archived
+func (h *BookingHandler) Archive(w http.ResponseWriter, r *http.Request) {
+	// Parse booking ID from the URL
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("Invalid booking ID format for archive: %s", idStr)
+		http.Error(w, "Invalid booking ID", http.StatusBadRequest)
+		return
+	}
+
+	// Check if booking exists first
+	booking, err := h.repo.GetByID(r.Context(), id)
+	if err != nil {
+		log.Printf("Error checking booking existence %d: %v", id, err)
+		http.Error(w, "Failed to check booking", http.StatusInternalServerError)
+		return
+	}
+
+	if booking == nil {
+		log.Printf("Cannot archive non-existent booking: %d", id)
+		http.Error(w, "Booking not found", http.StatusNotFound)
+		return
+	}
+
+	// Don't archive if already archived
+	if booking.Archived {
+		log.Printf("Booking %d is already archived", id)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err = h.repo.Archive(r.Context(), id)
+	if err != nil {
+		log.Printf("Error archiving booking %d: %v", id, err)
+
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Booking not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to archive booking", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Successfully archived booking %d", id)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Unarchive marks a booking as unarchived
+func (h *BookingHandler) Unarchive(w http.ResponseWriter, r *http.Request) {
+	// Parse booking ID from the URL
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("Invalid booking ID format for unarchive: %s", idStr)
+		http.Error(w, "Invalid booking ID", http.StatusBadRequest)
+		return
+	}
+
+	// Check if booking exists first
+	booking, err := h.repo.GetByID(r.Context(), id)
+	if err != nil {
+		log.Printf("Error checking booking existence %d: %v", id, err)
+		http.Error(w, "Failed to check booking", http.StatusInternalServerError)
+		return
+	}
+
+	if booking == nil {
+		log.Printf("Cannot unarchive non-existent booking: %d", id)
+		http.Error(w, "Booking not found", http.StatusNotFound)
+		return
+	}
+
+	// Don't unarchive if already active
+	if !booking.Archived {
+		log.Printf("Booking %d is already active (not archived)", id)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err = h.repo.Unarchive(r.Context(), id)
+	if err != nil {
+		log.Printf("Error unarchiving booking %d: %v", id, err)
+
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Booking not found", http.StatusNotFound)
+			return
+		}
+
+		http.Error(w, "Failed to unarchive booking", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Successfully unarchived booking %d", id)
+	w.WriteHeader(http.StatusNoContent)
 }

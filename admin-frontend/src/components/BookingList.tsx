@@ -12,11 +12,11 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [includeArchived, setIncludeArchived] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // TODO authorize API requests with JWT token
   useEffect(() => {
     async function fetchBookings() {
       try {
@@ -27,11 +27,14 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
           return;
         }
 
-        const response = await fetch(`${API_URL}/api/v1/bookings`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          `${API_URL}/api/v1/bookings?include_archived=${includeArchived}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (response.status === 401) {
           localStorage.removeItem("authToken");
@@ -55,14 +58,28 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
     if (isAuthenticated) {
       fetchBookings();
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, includeArchived]);
+
+  const toggleArchivedView = () => {
+    setIncludeArchived((prev) => !prev);
+  };
 
   if (loading) return <p>Loading bookings...</p>;
   if (error) return <p className="text-red-500">Error: {error}</p>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Bookings</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Bookings</h1>
+        <div className="flex space-x-2">
+          <button
+            onClick={toggleArchivedView}
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            {includeArchived ? "Hide Archived" : "Show Archived"}
+          </button>
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border rounded-lg">
@@ -111,7 +128,9 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
               bookings.map((booking) => (
                 <tr
                   key={booking.id}
-                  className="border-t hover:bg-gray-50 cursor-pointer"
+                  className={`border-t hover:bg-gray-50 cursor-pointer ${
+                    booking.archived ? "bg-gray-100 text-gray-500" : ""
+                  }`}
                   onClick={() => navigate(`/booking/${booking.id}`)}
                 >
                   {!hiddenColumns.includes("id") && (

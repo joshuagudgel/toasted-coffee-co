@@ -19,4 +19,5 @@ type Booking struct {
 	MilkOptions   []string  `json:"milkOptions" validate:"required,min=1"`
 	Package       string    `json:"package"`
 	CreatedAt     time.Time `json:"createdAt,omitempty"`
+	Archived      bool      `json:"archived"`
 }

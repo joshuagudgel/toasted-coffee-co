@@ -29,13 +29,16 @@ func (r *BookingRepository) Create(ctx context.Context, booking *models.Booking)
 		return 0, fmt.Errorf("invalid date format: %w", err)
 	}
 
+	// Set default values for new bookings
+	booking.Archived = false
+	
 	var id int
 	err = r.db.Pool.QueryRow(ctx, `
-        INSERT INTO bookings (name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        INSERT INTO bookings (name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, archived)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id
     `, booking.Name, booking.Email, booking.Phone, parsedDate, booking.Time, booking.People, booking.Location,
-		booking.Notes, booking.CoffeeFlavors, booking.MilkOptions, booking.Package).Scan(&id)
+		booking.Notes, booking.CoffeeFlavors, booking.MilkOptions, booking.Package, booking.Archived).Scan(&id)
 
 	if err != nil {
 		return 0, err
@@ -51,13 +54,13 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Bookin
 	var dateTime time.Time
 
 	err := r.db.Pool.QueryRow(ctx, `
-        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
+        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at, archived
         FROM bookings 
         WHERE id = $1
     `, id).Scan(
 		&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &dateTime, &booking.Time, &booking.People,
 		&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
-		&booking.Package, &booking.CreatedAt,
+		&booking.Package, &booking.CreatedAt, &booking.Archived,
 	)
 
 	if err != nil {
@@ -74,14 +77,18 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Bookin
 }
 
 // GetAll retrieves all bookings
-func (r *BookingRepository) GetAll(ctx context.Context) ([]*models.Booking, error) {
+func (r *BookingRepository) GetAll(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
 	log.Println("Starting GetAll query...")
 
 	query := `
-        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at 
+        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at, archived 
         FROM bookings
-        ORDER BY date DESC, time ASC
     `
+	if !includeArchived {
+		query += " WHERE archived = FALSE"
+	}
+	query += " ORDER BY date DESC, time ASC"
+
 	log.Println("Executing query:", query)
 
 	rows, err := r.db.Pool.Query(ctx, query)
@@ -104,7 +111,7 @@ func (r *BookingRepository) GetAll(ctx context.Context) ([]*models.Booking, erro
 		err := rows.Scan(
 			&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &dateTime, &booking.Time, &booking.People,
 			&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
-			&booking.Package, &booking.CreatedAt,
+			&booking.Package, &booking.CreatedAt, &booking.Archived,
 		)
 		if err != nil {
 			log.Printf("Error scanning row %d: %v", rowNum, err)
@@ -158,11 +165,49 @@ func (r *BookingRepository) Update(ctx context.Context, id int, booking *models.
         UPDATE bookings 
         SET name = $1, email = $2, phone = $3, date = $4, time = $5, 
             people = $6, location = $7, notes = $8, coffee_flavors = $9, 
-            milk_options = $10, package = $11
-        WHERE id = $12
+            milk_options = $10, package = $11, archived = $12
+        WHERE id = $13
     `, booking.Name, booking.Email, booking.Phone, parsedDate, booking.Time,
 		booking.People, booking.Location, booking.Notes, booking.CoffeeFlavors,
-		booking.MilkOptions, booking.Package, id)
+		booking.MilkOptions, booking.Package, booking.Archived, id)
+
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("booking not found")
+	}
+
+	return nil
+}
+
+// Archive marks a booking as archived
+func (r *BookingRepository) Archive(ctx context.Context, id int) error {
+	commandTag, err := r.db.Pool.Exec(ctx, `
+        UPDATE bookings 
+        SET archived = TRUE
+        WHERE id = $1
+    `, id)
+
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return fmt.Errorf("booking not found")
+	}
+
+	return nil
+}
+
+// Unarchive restores a booking from archived status
+func (r *BookingRepository) Unarchive(ctx context.Context, id int) error {
+	commandTag, err := r.db.Pool.Exec(ctx, `
+        UPDATE bookings 
+        SET archived = FALSE
+        WHERE id = $1
+    `, id)
 
 	if err != nil {
 		return err

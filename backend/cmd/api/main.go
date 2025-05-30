@@ -84,6 +84,19 @@ func main() {
 		log.Printf("Warning: Could not read migration file: %v", err)
 	}
 
+	migrationSQL4, err := os.ReadFile("internal/database/migrations/04_add_archived_column.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL4))
+		if err != nil {
+			// Log but don't exit on migration error
+			log.Printf("Warning: Migration 4 error: %v", err)
+		} else {
+			log.Println("Migration 4 executed successfully")
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
 	log.Println("Setting up admin user...")
 	var count int
 	err = db.Pool.QueryRow(context.Background(), `
@@ -158,6 +171,8 @@ func main() {
 			r.Get("/bookings/{id}", bookingHandler.GetByID)
 			r.Delete("/bookings/{id}", bookingHandler.Delete)
 			r.Put("/bookings/{id}", bookingHandler.Update)
+			r.Post("/bookings/{id}/archive", bookingHandler.Archive)
+			r.Post("/bookings/{id}/unarchive", bookingHandler.Unarchive)
 
 			// Auth validation
 			r.Get("/auth/validate", authHandler.ValidateToken)

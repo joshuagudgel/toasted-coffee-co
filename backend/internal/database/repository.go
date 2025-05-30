@@ -10,7 +10,9 @@ import (
 type BookingRepositoryInterface interface {
 	Create(ctx context.Context, booking *models.Booking) (int, error)
 	GetByID(ctx context.Context, id int) (*models.Booking, error)
-	GetAll(ctx context.Context) ([]*models.Booking, error)
+	GetAll(ctx context.Context, isArchived bool) ([]*models.Booking, error)
 	Delete(ctx context.Context, id int) error
 	Update(ctx context.Context, id int, booking *models.Booking) error
+	Archive(ctx context.Context, id int) error
+	Unarchive(ctx context.Context, id int) error
 }

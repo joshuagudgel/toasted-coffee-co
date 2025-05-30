@@ -12,4 +12,5 @@ export interface Booking {
   notes: string;
   package?: string;
   createdAt: string;
+  archived: boolean;
 }
