@@ -31,7 +31,7 @@ func (r *BookingRepository) Create(ctx context.Context, booking *models.Booking)
 
 	// Set default values for new bookings
 	booking.Archived = false
-	
+
 	var id int
 	err = r.db.Pool.QueryRow(ctx, `
         INSERT INTO bookings (name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, archived)
@@ -89,7 +89,7 @@ func (r *BookingRepository) GetAll(ctx context.Context, includeArchived bool) ([
 	}
 	query += " ORDER BY date DESC, time ASC"
 
-	log.Println("Executing query:", query)
+	//log.Println("Executing query:", query)
 
 	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {

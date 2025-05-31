@@ -30,8 +30,9 @@ type MockBookingRepository struct {
 	GetByIDArg    int
 
 	// GetAll
-	GetAllFunc   func(context.Context) ([]*models.Booking, error)
-	GetAllCalled bool
+	GetAllFunc            func(context.Context, bool) ([]*models.Booking, error)
+	GetAllCalled          bool
+	GetAllIncludeArchived bool
 
 	// Delete
 	DeleteFunc   func(context.Context, int) error
@@ -43,6 +44,16 @@ type MockBookingRepository struct {
 	UpdateCalled  bool
 	UpdateID      int
 	UpdateBooking *models.Booking
+
+	// Archive
+	ArchiveFunc   func(context.Context, int) error
+	ArchiveCalled bool
+	ArchiveArg    int
+
+	// Unarchive
+	UnarchiveFunc   func(context.Context, int) error
+	UnarchiveCalled bool
+	UnarchiveArg    int
 }
 
 // Implement interface methods with tracking
@@ -58,9 +69,10 @@ func (m *MockBookingRepository) GetByID(ctx context.Context, id int) (*models.Bo
 	return m.GetByIDFunc(ctx, id)
 }
 
-func (m *MockBookingRepository) GetAll(ctx context.Context) ([]*models.Booking, error) {
+func (m *MockBookingRepository) GetAll(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
 	m.GetAllCalled = true
-	return m.GetAllFunc(ctx)
+	m.GetAllIncludeArchived = includeArchived
+	return m.GetAllFunc(ctx, includeArchived)
 }
 
 func (m *MockBookingRepository) Delete(ctx context.Context, id int) error {
@@ -74,6 +86,24 @@ func (m *MockBookingRepository) Update(ctx context.Context, id int, booking *mod
 	m.UpdateBooking = booking
 	if m.UpdateFunc != nil {
 		return m.UpdateFunc(ctx, id, booking)
+	}
+	return nil
+}
+
+func (m *MockBookingRepository) Archive(ctx context.Context, id int) error {
+	m.ArchiveCalled = true
+	m.ArchiveArg = id
+	if m.ArchiveFunc != nil {
+		return m.ArchiveFunc(ctx, id)
+	}
+	return nil
+}
+
+func (m *MockBookingRepository) Unarchive(ctx context.Context, id int) error {
+	m.UnarchiveCalled = true
+	m.UnarchiveArg = id
+	if m.UnarchiveFunc != nil {
+		return m.UnarchiveFunc(ctx, id)
 	}
 	return nil
 }
@@ -247,14 +277,14 @@ func TestCreateBookingHandler(t *testing.T) {
 func TestGetAllBookingsHandler(t *testing.T) {
 	tests := []struct {
 		name           string
-		mockGetAllFunc func(context.Context) ([]*models.Booking, error)
+		mockGetAllFunc func(context.Context, bool) ([]*models.Booking, error)
 		expectedStatus int
 		expectedCount  int
 		expectedErr    string
 	}{
 		{
 			name: "Successfully retrieve bookings",
-			mockGetAllFunc: func(ctx context.Context) ([]*models.Booking, error) {
+			mockGetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
 				return []*models.Booking{
 					{ID: 1, Name: "User1"},
 					{ID: 2, Name: "User2"},
@@ -265,7 +295,7 @@ func TestGetAllBookingsHandler(t *testing.T) {
 		},
 		{
 			name: "Empty bookings list",
-			mockGetAllFunc: func(ctx context.Context) ([]*models.Booking, error) {
+			mockGetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
 				return []*models.Booking{}, nil
 			},
 			expectedStatus: http.StatusOK,
@@ -273,7 +303,7 @@ func TestGetAllBookingsHandler(t *testing.T) {
 		},
 		{
 			name: "Database error",
-			mockGetAllFunc: func(ctx context.Context) ([]*models.Booking, error) {
+			mockGetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
 				return nil, fmt.Errorf("database connection error")
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -555,7 +585,7 @@ func TestDeleteBookingHandler(t *testing.T) {
 func TestResponseHeaders(t *testing.T) {
 	// Create mock repository
 	mockRepo := &MockBookingRepository{
-		GetAllFunc: func(ctx context.Context) ([]*models.Booking, error) {
+		GetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
 			return []*models.Booking{}, nil
 		},
 	}
@@ -582,5 +612,368 @@ func TestResponseHeaders(t *testing.T) {
 	var response interface{}
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
 		t.Errorf("Response is not valid JSON: %v", err)
+	}
+}
+
+func TestArchiveBookingHandler(t *testing.T) {
+	tests := []struct {
+		name            string
+		bookingID       string
+		mockGetByIDFunc func(context.Context, int) (*models.Booking, error)
+		mockArchiveFunc func(context.Context, int) error
+		expectedStatus  int
+		expectedErr     string
+	}{
+		{
+			name:      "Successfully archive booking",
+			bookingID: "123",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User", Archived: false}, nil
+			},
+			mockArchiveFunc: func(ctx context.Context, id int) error {
+				return nil
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name:      "Invalid booking ID",
+			bookingID: "abc",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return nil, nil // Should not be called
+			},
+			mockArchiveFunc: func(ctx context.Context, id int) error {
+				return nil // Should not be called
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedErr:    "Invalid booking ID",
+		},
+		{
+			name:      "Booking not found",
+			bookingID: "456",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return nil, nil
+			},
+			mockArchiveFunc: func(ctx context.Context, id int) error {
+				return nil // Should not be called
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedErr:    "Booking not found",
+		},
+		{
+			name:      "Already archived",
+			bookingID: "789",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User", Archived: true}, nil
+			},
+			mockArchiveFunc: func(ctx context.Context, id int) error {
+				return nil
+			},
+			expectedStatus: http.StatusNoContent, // Idempotent operation
+		},
+		{
+			name:      "Database error",
+			bookingID: "101",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User", Archived: false}, nil
+			},
+			mockArchiveFunc: func(ctx context.Context, id int) error {
+				return fmt.Errorf("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedErr:    "Failed to archive booking",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mock repository
+			mockRepo := &MockBookingRepository{
+				GetByIDFunc: tc.mockGetByIDFunc,
+				ArchiveFunc: tc.mockArchiveFunc,
+			}
+
+			// Create handler with mock
+			handler := handlers.NewBookingHandler(mockRepo)
+
+			// Create request with URL parameter
+			req := httptest.NewRequest("POST", "/api/v1/bookings/"+tc.bookingID+"/archive", nil)
+
+			// Setup chi context with URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.bookingID)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Call handler
+			handler.Archive(w, req)
+
+			// Check status code
+			if w.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tc.expectedStatus, w.Code)
+			}
+
+			// For valid ID, verify Archive was called
+			if tc.expectedStatus == http.StatusNoContent {
+				id, _ := strconv.Atoi(tc.bookingID)
+				if !mockRepo.ArchiveCalled {
+					t.Errorf("Expected Archive to be called for ID %d, but it wasn't", id)
+				}
+				if mockRepo.ArchiveArg != id {
+					t.Errorf("Archive called with wrong ID, expected %d, got %d", id, mockRepo.ArchiveArg)
+				}
+			}
+
+			// Check error message if expected
+			if tc.expectedErr != "" {
+				responseBody := w.Body.String()
+				if !strings.Contains(responseBody, tc.expectedErr) {
+					t.Errorf("Expected error '%s', got '%s'", tc.expectedErr, responseBody)
+				}
+			}
+		})
+	}
+}
+
+func TestUnarchiveBookingHandler(t *testing.T) {
+	tests := []struct {
+		name              string
+		bookingID         string
+		mockGetByIDFunc   func(context.Context, int) (*models.Booking, error)
+		mockUnarchiveFunc func(context.Context, int) error
+		expectedStatus    int
+		expectedErr       string
+	}{
+		{
+			name:      "Successfully unarchive booking",
+			bookingID: "123",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User", Archived: true}, nil
+			},
+			mockUnarchiveFunc: func(ctx context.Context, id int) error {
+				return nil
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name:      "Invalid booking ID",
+			bookingID: "abc",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return nil, nil // Should not be called
+			},
+			mockUnarchiveFunc: func(ctx context.Context, id int) error {
+				return nil // Should not be called
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedErr:    "Invalid booking ID",
+		},
+		{
+			name:      "Booking not found",
+			bookingID: "456",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return nil, nil
+			},
+			mockUnarchiveFunc: func(ctx context.Context, id int) error {
+				return nil // Should not be called
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedErr:    "Booking not found",
+		},
+		{
+			name:      "Already active (not archived)",
+			bookingID: "789",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User", Archived: false}, nil
+			},
+			mockUnarchiveFunc: func(ctx context.Context, id int) error {
+				return nil
+			},
+			expectedStatus: http.StatusNoContent, // Idempotent operation
+		},
+		{
+			name:      "Database error",
+			bookingID: "101",
+			mockGetByIDFunc: func(ctx context.Context, id int) (*models.Booking, error) {
+				return &models.Booking{ID: id, Name: "Test User", Archived: true}, nil
+			},
+			mockUnarchiveFunc: func(ctx context.Context, id int) error {
+				return fmt.Errorf("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedErr:    "Failed to unarchive booking",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mock repository
+			mockRepo := &MockBookingRepository{
+				GetByIDFunc:   tc.mockGetByIDFunc,
+				UnarchiveFunc: tc.mockUnarchiveFunc,
+			}
+
+			// Create handler with mock
+			handler := handlers.NewBookingHandler(mockRepo)
+
+			// Create request with URL parameter
+			req := httptest.NewRequest("POST", "/api/v1/bookings/"+tc.bookingID+"/unarchive", nil)
+
+			// Setup chi context with URL parameters
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("id", tc.bookingID)
+			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+			// Create response recorder
+			w := httptest.NewRecorder()
+
+			// Call handler
+			handler.Unarchive(w, req)
+
+			// Check status code
+			if w.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tc.expectedStatus, w.Code)
+			}
+
+			// For valid ID, verify Unarchive was called
+			if tc.expectedStatus == http.StatusNoContent {
+				id, _ := strconv.Atoi(tc.bookingID)
+				if !mockRepo.UnarchiveCalled {
+					t.Errorf("Expected Unarchive to be called for ID %d, but it wasn't", id)
+				}
+				if mockRepo.UnarchiveArg != id {
+					t.Errorf("Unarchive called with wrong ID, expected %d, got %d", id, mockRepo.UnarchiveArg)
+				}
+			}
+
+			// Check error message if expected
+			if tc.expectedErr != "" {
+				responseBody := w.Body.String()
+				if !strings.Contains(responseBody, tc.expectedErr) {
+					t.Errorf("Expected error '%s', got '%s'", tc.expectedErr, responseBody)
+				}
+			}
+		})
+	}
+}
+
+func TestGetAllBookingsWithArchiveFiltering(t *testing.T) {
+	tests := []struct {
+		name             string
+		queryParams      string
+		mockGetAllFunc   func(context.Context, bool) ([]*models.Booking, error)
+		expectedStatus   int
+		expectedCount    int
+		expectedArchived bool
+	}{
+		{
+			name:        "Get active bookings only (default)",
+			queryParams: "",
+			mockGetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
+				if includeArchived {
+					t.Error("Expected includeArchived=false, got true")
+				}
+				return []*models.Booking{
+					{ID: 1, Name: "Active 1", Archived: false},
+					{ID: 2, Name: "Active 2", Archived: false},
+				}, nil
+			},
+			expectedStatus:   http.StatusOK,
+			expectedCount:    2,
+			expectedArchived: false,
+		},
+		{
+			name:        "Get active bookings only (explicit)",
+			queryParams: "?include_archived=false",
+			mockGetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
+				if includeArchived {
+					t.Error("Expected includeArchived=false, got true")
+				}
+				return []*models.Booking{
+					{ID: 1, Name: "Active 1", Archived: false},
+					{ID: 2, Name: "Active 2", Archived: false},
+				}, nil
+			},
+			expectedStatus:   http.StatusOK,
+			expectedCount:    2,
+			expectedArchived: false,
+		},
+		{
+			name:        "Get all bookings including archived",
+			queryParams: "?include_archived=true",
+			mockGetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
+				if !includeArchived {
+					t.Error("Expected includeArchived=true, got false")
+				}
+				return []*models.Booking{
+					{ID: 1, Name: "Active 1", Archived: false},
+					{ID: 2, Name: "Active 2", Archived: false},
+					{ID: 3, Name: "Archived 1", Archived: true},
+					{ID: 4, Name: "Archived 2", Archived: true},
+				}, nil
+			},
+			expectedStatus:   http.StatusOK,
+			expectedCount:    4,
+			expectedArchived: true,
+		},
+		{
+			name:        "Invalid include_archived parameter",
+			queryParams: "?include_archived=invalid",
+			mockGetAllFunc: func(ctx context.Context, includeArchived bool) ([]*models.Booking, error) {
+				// Should default to false for invalid values
+				if includeArchived {
+					t.Error("Expected includeArchived=false for invalid parameter, got true")
+				}
+				return []*models.Booking{
+					{ID: 1, Name: "Active 1", Archived: false},
+					{ID: 2, Name: "Active 2", Archived: false},
+				}, nil
+			},
+			expectedStatus:   http.StatusOK,
+			expectedCount:    2,
+			expectedArchived: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mock repository
+			mockRepo := &MockBookingRepository{
+				GetAllFunc: tc.mockGetAllFunc,
+			}
+
+			// Create handler with mock
+			handler := handlers.NewBookingHandler(mockRepo)
+
+			// Create request with query parameters
+			req := httptest.NewRequest("GET", "/api/v1/bookings"+tc.queryParams, nil)
+			w := httptest.NewRecorder()
+
+			// Call handler
+			handler.GetAll(w, req)
+
+			// Check status code
+			if w.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tc.expectedStatus, w.Code)
+			}
+
+			// Verify GetAll was called with correct includeArchived parameter
+			if mockRepo.GetAllCalled && mockRepo.GetAllIncludeArchived != tc.expectedArchived {
+				t.Errorf("Expected GetAll called with includeArchived=%v, got %v",
+					tc.expectedArchived, mockRepo.GetAllIncludeArchived)
+			}
+
+			// If successful, check the count of bookings
+			if tc.expectedStatus == http.StatusOK {
+				var bookings []*models.Booking
+				if err := json.Unmarshal(w.Body.Bytes(), &bookings); err != nil {
+					t.Fatalf("Failed to unmarshal response: %v", err)
+				}
+
+				if len(bookings) != tc.expectedCount {
+					t.Errorf("Expected %d bookings, got %d", tc.expectedCount, len(bookings))
+				}
+			}
+		})
 	}
 }
