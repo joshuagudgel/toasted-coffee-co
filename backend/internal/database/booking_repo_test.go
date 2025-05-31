@@ -3,6 +3,7 @@ package database_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -16,6 +17,8 @@ type TestDB struct {
 	Pool *pgxpool.Pool
 }
 
+// ----- Helper functions -----
+// setupTestDB initializes a test database connection and creates necessary tables
 func setupTestDB(t *testing.T) *TestDB {
 	// Get test database URL from environment or use default
 	dbURL := os.Getenv("TEST_DATABASE_URL")
@@ -71,6 +74,7 @@ func setupTestDB(t *testing.T) *TestDB {
 	return &TestDB{Pool: pool}
 }
 
+// cleanupTestDB cleans up the test database by deleting all data and closing the connection
 func cleanupTestDB(t *testing.T, db *TestDB) {
 	// Clean up test data
 	_, err := db.Pool.Exec(context.Background(), "DELETE FROM bookings")
@@ -81,6 +85,7 @@ func cleanupTestDB(t *testing.T, db *TestDB) {
 }
 
 func TestCreateBooking(t *testing.T) {
+	log.Println("Running TestCreateBooking...")
 	// Skip test if no database is available
 	if os.Getenv("SKIP_DB_TESTS") == "true" {
 		t.Skip("Skipping database tests")
@@ -192,13 +197,8 @@ func TestCreateBooking(t *testing.T) {
 	}
 }
 
-// what were you thinking
-func TestGetAllBookings_EdgeCases(t *testing.T) {
-	// Skip test if no database is available
-	if os.Getenv("SKIP_DB_TESTS") == "true" {
-		t.Skip("Skipping database tests")
-	}
-
+func TestEmptyDatabase(t *testing.T) {
+	log.Println("Running TestEmptyDatabase...")
 	testDB := setupTestDB(t)
 	defer cleanupTestDB(t, testDB)
 
@@ -206,7 +206,6 @@ func TestGetAllBookings_EdgeCases(t *testing.T) {
 	db := &database.DB{Pool: testDB.Pool}
 	repo := database.NewBookingRepository(db)
 
-	// Test 1: Empty database
 	t.Run("Empty database", func(t *testing.T) {
 		bookings, err := repo.GetAll(context.Background(), false)
 		if err != nil {
@@ -216,86 +215,27 @@ func TestGetAllBookings_EdgeCases(t *testing.T) {
 		if len(bookings) != 0 {
 			t.Errorf("Expected empty result, got %d bookings", len(bookings))
 		}
-
-		// Test 2: Mix of active and archived bookings
-		t.Run("Mix of active and archived bookings", func(t *testing.T) {
-			// Clear the database first to ensure a clean state
-			_, err := testDB.Pool.Exec(context.Background(), "DELETE FROM bookings")
-			if err != nil {
-				t.Fatalf("Failed to clean test database: %v", err)
-			}
-
-			// Insert 8 test bookings - 5 active, 3 archived
-			for i := 0; i < 8; i++ {
-				booking := &models.Booking{
-					Name:          fmt.Sprintf("User %d", i),
-					Email:         fmt.Sprintf("user%d@example.com", i),
-					Date:          "2025-06-01",
-					Time:          "14:00",
-					People:        5,
-					Location:      "Test Location",
-					CoffeeFlavors: []string{"french_toast"},
-					MilkOptions:   []string{"whole"},
-				}
-				id, err := repo.Create(context.Background(), booking)
-				if err != nil {
-					t.Fatalf("Failed to create test booking: %v", err)
-				}
-
-				// Archive bookings 5, 6, and 7
-				if i >= 5 {
-					err = repo.Archive(context.Background(), id)
-					if err != nil {
-						t.Fatalf("Failed to archive booking: %v", err)
-					}
-				}
-			}
-
-			// Test 2.1: Retrieve active bookings only
-			activeBookings, err := repo.GetAll(context.Background(), false)
-			if err != nil {
-				t.Fatalf("Failed to retrieve active bookings: %v", err)
-			}
-
-			if len(activeBookings) != 5 {
-				t.Errorf("Expected 5 active bookings, got %d", len(activeBookings))
-			}
-
-			// Verify all returned bookings are active (not archived)
-			for _, booking := range activeBookings {
-				if booking.Archived {
-					t.Errorf("GetAll with includeArchived=false returned an archived booking (ID: %d)", booking.ID)
-				}
-			}
-
-			// Test 2.2: Retrieve all bookings including archived
-			allBookings, err := repo.GetAll(context.Background(), true)
-			if err != nil {
-				t.Fatalf("Failed to retrieve all bookings: %v", err)
-			}
-
-			if len(allBookings) != 8 {
-				t.Errorf("Expected 8 total bookings, got %d", len(allBookings))
-			}
-
-			// Count archived bookings to verify we got the expected number
-			archivedCount := 0
-			for _, booking := range allBookings {
-				if booking.Archived {
-					archivedCount++
-				}
-			}
-
-			if archivedCount != 3 {
-				t.Errorf("Expected 3 archived bookings, got %d", archivedCount)
-			}
-		})
 	})
+}
 
-	// Test 2: Insert multiple bookings
-	t.Run("Multiple bookings", func(t *testing.T) {
-		// Insert test bookings
-		for i := 0; i < 5; i++ {
+func TestMixOfActiveAndArchivedBookings(t *testing.T) {
+	log.Println("Running TestMixOfActiveAndArchivedBookings...")
+	testDB := setupTestDB(t)
+	defer cleanupTestDB(t, testDB)
+
+	// Create wrapped DB object
+	db := &database.DB{Pool: testDB.Pool}
+	repo := database.NewBookingRepository(db)
+
+	t.Run("Mix of active and archived bookings", func(t *testing.T) {
+		// Clear the database first to ensure a clean state
+		_, err := testDB.Pool.Exec(context.Background(), "DELETE FROM bookings")
+		if err != nil {
+			t.Fatalf("Failed to clean test database: %v", err)
+		}
+
+		// Insert 8 test bookings - 5 active, 3 archived
+		for i := 0; i < 8; i++ {
 			booking := &models.Booking{
 				Name:          fmt.Sprintf("User %d", i),
 				Email:         fmt.Sprintf("user%d@example.com", i),
@@ -306,30 +246,64 @@ func TestGetAllBookings_EdgeCases(t *testing.T) {
 				CoffeeFlavors: []string{"french_toast"},
 				MilkOptions:   []string{"whole"},
 			}
-			_, err := repo.Create(context.Background(), booking)
+			id, err := repo.Create(context.Background(), booking)
 			if err != nil {
 				t.Fatalf("Failed to create test booking: %v", err)
 			}
+
+			// Archive bookings 5, 6, and 7
+			if i >= 5 {
+				err = repo.Archive(context.Background(), id)
+				if err != nil {
+					t.Fatalf("Failed to archive booking: %v", err)
+				}
+			}
 		}
 
-		// Retrieve all bookings
-		bookings, err := repo.GetAll(context.Background(), false)
+		// Check 1: Retrieve active bookings only
+		activeBookings, err := repo.GetAll(context.Background(), false)
 		if err != nil {
-			t.Fatalf("Failed to retrieve bookings: %v", err)
+			t.Fatalf("Failed to retrieve active bookings: %v", err)
 		}
 
-		if len(bookings) != 5 {
-			t.Errorf("Expected 5 bookings, got %d", len(bookings))
+		if len(activeBookings) != 5 {
+			t.Errorf("Expected 5 active bookings, got %d", len(activeBookings))
+		}
+
+		// Verify all returned bookings are active (not archived)
+		for _, booking := range activeBookings {
+			if booking.Archived {
+				t.Errorf("GetAll with includeArchived=false returned an archived booking (ID: %d)", booking.ID)
+			}
+		}
+
+		// Check 2: Retrieve all bookings including archived
+		allBookings, err := repo.GetAll(context.Background(), true)
+		if err != nil {
+			t.Fatalf("Failed to retrieve all bookings: %v", err)
+		}
+
+		if len(allBookings) != 8 {
+			t.Errorf("Expected 8 total bookings, got %d", len(allBookings))
+		}
+
+		// Count archived bookings to verify we got the expected number
+		archivedCount := 0
+		for _, booking := range allBookings {
+			if booking.Archived {
+				archivedCount++
+			}
+		}
+
+		if archivedCount != 3 {
+			t.Errorf("Expected 3 archived bookings, got %d", archivedCount)
 		}
 	})
+
 }
 
 func TestArchiveAndUnarchiveBooking(t *testing.T) {
-	// Skip test if no database is available
-	if os.Getenv("SKIP_DB_TESTS") == "true" {
-		t.Skip("Skipping database tests")
-	}
-
+	log.Println("Running TestArchiveAndUnarchiveBooking...")
 	testDB := setupTestDB(t)
 	defer cleanupTestDB(t, testDB)
 
@@ -415,10 +389,7 @@ func TestArchiveAndUnarchiveBooking(t *testing.T) {
 }
 
 func TestGetAllWithArchiveFiltering(t *testing.T) {
-	// Skip test if no database is available
-	if os.Getenv("SKIP_DB_TESTS") == "true" {
-		t.Skip("Skipping database tests")
-	}
+	log.Println("Running TestGetAllWithArchiveFiltering...")
 
 	testDB := setupTestDB(t)
 	defer cleanupTestDB(t, testDB)
