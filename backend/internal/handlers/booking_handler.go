@@ -119,6 +119,7 @@ func (h *BookingHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 // GetAll retrieves all bookings
 func (h *BookingHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+
 	includeArchived := r.URL.Query().Get("include_archived") == "true"
 	log.Printf("Fetching bookings, includeArchived: %v", includeArchived)
 
