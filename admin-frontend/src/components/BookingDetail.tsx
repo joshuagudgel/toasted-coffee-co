@@ -78,10 +78,18 @@ export default function BookingDetail() {
     if (!editedBooking) return;
 
     const { name, value } = e.target;
-    setEditedBooking((prev) => {
-      if (!prev) return null;
-      return { ...prev, [name]: value };
-    });
+    // Convert people field to a number
+    if (name === "people") {
+      setEditedBooking((prev) => {
+        if (!prev) return null;
+        return { ...prev, [name]: parseInt(value, 10) || 0 };
+      });
+    } else {
+      setEditedBooking((prev) => {
+        if (!prev) return null;
+        return { ...prev, [name]: value };
+      });
+    }
   };
 
   // Handle checkbox changes for arrays (coffeeFlavors, milkOptions)
