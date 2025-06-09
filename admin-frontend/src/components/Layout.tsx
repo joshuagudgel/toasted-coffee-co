@@ -1,8 +1,9 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Layout() {
   const { logout } = useAuth();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -13,9 +14,26 @@ export default function Layout() {
       <header className="bg-terracotta text-parchment p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">Toasted Coffee Admin</h1>
-          <nav>
-            <Link to="/" className="hover:text-latte px-3 py-2">
+          <nav className="flex space-x-4">
+            <Link
+              to="/"
+              className={`px-3 py-2 rounded transition ${
+                location.pathname === "/" || location.pathname.startsWith("/booking/")
+                  ? "bg-mocha text-parchment"
+                  : "hover:text-latte"
+              }`}
+            >
               Bookings
+            </Link>
+            <Link
+              to="/menu"
+              className={`px-3 py-2 rounded transition ${
+                location.pathname === "/menu"
+                  ? "bg-mocha text-parchment"
+                  : "hover:text-latte"
+              }`}
+            >
+              Menu
             </Link>
             <button
               onClick={handleLogout}
@@ -23,7 +41,6 @@ export default function Layout() {
             >
               Logout
             </button>
-            
           </nav>
         </div>
       </header>

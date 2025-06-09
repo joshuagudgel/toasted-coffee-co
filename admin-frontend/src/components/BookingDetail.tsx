@@ -1,23 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Booking } from "../types/booking";
-
-// Define coffee and milk options matching BookingModal
-const coffeeOptions = [
-  { value: "french_toast", label: "French Toast" },
-  { value: "dirty_vanilla_chai", label: "Dirty Vanilla Chai" },
-  { value: "mexican_mocha", label: "Mexican Mocha" },
-  { value: "cinnamon_brown_sugar", label: "Cinnamon Brown Sugar" },
-  { value: "horchata", label: "Horchata (made w/ rice milk)" },
-];
-
-const milkOptions = [
-  { value: "whole", label: "Whole Milk" },
-  { value: "half_and_half", label: "Half & Half" },
-  { value: "oat", label: "Oat Milk" },
-  { value: "almond", label: "Almond Milk" },
-  { value: "rice", label: "Rice Milk" },
-];
+import { useMenu } from "../context/MenuContext";
 
 export default function BookingDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +15,20 @@ export default function BookingDetail() {
   const [isArchiving, setIsArchiving] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
   const navigate = useNavigate();
+
+  // Get menu options from context
+  const { coffeeItems, milkItems } = useMenu();
+
+  // Convert menu items to options format
+  const coffeeOptions = coffeeItems.map((item) => ({
+    value: item.value,
+    label: item.label,
+  }));
+
+  const milkOptions = milkItems.map((item) => ({
+    value: item.value,
+    label: item.label,
+  }));
 
   // Fetch booking details
   useEffect(() => {

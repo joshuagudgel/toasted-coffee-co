@@ -31,8 +31,9 @@ func main() {
 	}
 	defer db.Close()
 
-	// run database migrations
+	// Log database migrations
 	log.Println("Running database migrations...")
+
 	migrationSQL1, err := os.ReadFile("internal/database/migrations/01_create_bookings_table.sql")
 	if err != nil {
 		log.Printf("Warning: Could not read migration file: %v", err)
@@ -71,7 +72,6 @@ func main() {
 	if err == nil {
 		_, err := db.Pool.Exec(context.Background(), string(migrationSQL3))
 		if err != nil {
-			// Check if error is because columns already exist (which is fine)
 			if strings.Contains(err.Error(), "already exists") {
 				log.Println("Columns already exist, skipping migration")
 			} else {
@@ -88,10 +88,33 @@ func main() {
 	if err == nil {
 		_, err := db.Pool.Exec(context.Background(), string(migrationSQL4))
 		if err != nil {
-			// Log but don't exit on migration error
 			log.Printf("Warning: Migration 4 error: %v", err)
 		} else {
 			log.Println("Migration 4 executed successfully")
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
+	migrationSQL5, err := os.ReadFile("internal/database/migrations/05_create_menu_items_table.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL5))
+		if err != nil {
+			log.Printf("Warning: Migration 5 error: %v", err)
+		} else {
+			log.Println("Migration 5 executed successfully")
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
+	migrationSQL6, err := os.ReadFile("internal/database/migrations/06_add_menu_items.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL6))
+		if err != nil {
+			log.Printf("Warning: Migration 6 error: %v", err)
+		} else {
+			log.Println("Migration 6 executed successfully")
 		}
 	} else {
 		log.Printf("Warning: Could not read migration file: %v", err)

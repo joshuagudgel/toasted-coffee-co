@@ -3,6 +3,10 @@ import { useMenu } from "../../context/MenuContext";
 
 const Menu: React.FC = () => {
   const { coffeeOptions, milkOptions, loading } = useMenu();
+  
+  // Only show active items
+  const activeCoffeeOptions = coffeeOptions.filter(option => option.active);
+  const activeMilkOptions = milkOptions.filter(option => option.active);
 
   return (
     <section id="menu" className="py-20 bg-caramel relative overflow-hidden">
@@ -22,7 +26,7 @@ const Menu: React.FC = () => {
                 <p>Loading...</p>
               ) : (
                 <ul className="list-none list-inside text-lg text-espresso">
-                  {coffeeOptions.map((option) => (
+                  {activeCoffeeOptions.map((option) => (
                     <li key={option.id}>{option.label}</li>
                   ))}
                 </ul>
@@ -36,7 +40,7 @@ const Menu: React.FC = () => {
                 <p>Loading...</p>
               ) : (
                 <ul className="list-none list-inside text-lg text-espresso">
-                  {milkOptions.map((option) => (
+                  {activeMilkOptions.map((option) => (
                     <li key={option.id}>{option.label}</li>
                   ))}
                 </ul>

@@ -28,6 +28,21 @@ const BookingModal: React.FC<BookingModalProps> = ({
 }) => {
   const { coffeeOptions, milkOptions, loading } = useMenu();
 
+  // Convert menu items to usable format for the form
+  const coffeeChoices = coffeeOptions
+    .filter(item => item.active) // Only show active items
+    .map(item => ({
+      value: item.value,
+      label: item.label
+    }));
+  
+  const milkChoices = milkOptions
+    .filter(item => item.active)
+    .map(item => ({
+      value: item.value,
+      label: item.label
+    }));
+
   const [formData, setFormData] = useState<BookingFormData>({
     name: "",
     email: "",
@@ -272,7 +287,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 Coffee Flavors (select all that apply)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-3 rounded-md border border-gray-300">
-                {coffeeOptions.map((option) => (
+                {coffeeChoices.map((option) => (
                   <div key={option.value} className="flex items-center mb-2">
                     <input
                       type="checkbox"
@@ -298,7 +313,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 Milk Options (select all that apply)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white p-3 rounded-md border border-gray-300">
-                {milkOptions.map((option) => (
+                {milkChoices.map((option) => (
                   <div key={option.value} className="flex items-center mb-2">
                     <input
                       type="checkbox"
