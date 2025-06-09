@@ -4,6 +4,7 @@ import Packages from "./components/sections/Packages";
 import Menu from "./components/sections/Menu";
 import BookingModal from "./components/ui/BookingModal";
 import { BookingProvider, useBooking } from "./context/BookingContext";
+import { MenuProvider } from "./context/MenuContext";
 
 const AppContent = () => {
   const { isModalOpen, selectedPackage, closeModal } = useBooking();
@@ -26,9 +27,11 @@ const AppContent = () => {
 
 function App() {
   return (
-    <BookingProvider>
-      <AppContent />
-    </BookingProvider>
+    <MenuProvider>
+      <BookingProvider>
+        <AppContent />
+      </BookingProvider>
+    </MenuProvider>
   );
 }
 

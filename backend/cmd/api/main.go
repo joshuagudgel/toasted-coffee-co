@@ -142,10 +142,12 @@ func main() {
 	// Initialize repositories
 	bookingRepo := database.NewBookingRepository(db)
 	userRepo := database.NewUserRepository(db)
+	menuRepo := database.NewMenuRepository(db)
 
 	// Initialize handlers
 	bookingHandler := handlers.NewBookingHandler(bookingRepo)
 	authHandler := handlers.NewAuthHandler(userRepo)
+	menuHandler := handlers.NewMenuHandler(menuRepo)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -161,6 +163,8 @@ func main() {
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/auth/refresh", authHandler.RefreshToken)
 		r.Post("/bookings", bookingHandler.Create)
+		r.Get("/menu", menuHandler.GetAll)
+		r.Get("/menu/{type}", menuHandler.GetByType)
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
@@ -173,6 +177,11 @@ func main() {
 			r.Put("/bookings/{id}", bookingHandler.Update)
 			r.Post("/bookings/{id}/archive", bookingHandler.Archive)
 			r.Post("/bookings/{id}/unarchive", bookingHandler.Unarchive)
+
+			// Menu management
+			r.Post("/menu", menuHandler.Create)
+			r.Put("/menu/{id}", menuHandler.Update)
+			r.Delete("/menu/{id}", menuHandler.Delete)
 
 			// Auth validation
 			r.Get("/auth/validate", authHandler.ValidateToken)

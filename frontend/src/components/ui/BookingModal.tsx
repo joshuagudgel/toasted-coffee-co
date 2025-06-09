@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useMenu } from "../../context/MenuContext";
 
 type BookingFormData = {
   name: string;
@@ -25,6 +26,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
   onClose,
   selectedPackage,
 }) => {
+  const { coffeeOptions, milkOptions, loading } = useMenu();
+
   const [formData, setFormData] = useState<BookingFormData>({
     name: "",
     email: "",
@@ -38,22 +41,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
     notes: "",
     package: selectedPackage || "",
   });
-
-  const coffeeOptions = [
-    { value: "french_toast", label: "French Toast" },
-    { value: "dirty_vanilla_chai", label: "Dirty Vanilla Chai" },
-    { value: "mexican_mocha", label: "Mexican Mocha" },
-    { value: "cinnamon_brown_sugar", label: "Cinnamon Brown Sugar" },
-    { value: "horchata", label: "Horchata (made w/ rice milk)" },
-  ];
-
-  const milkOptions = [
-    { value: "whole", label: "Whole Milk" },
-    { value: "half_and_half", label: "Half & Half" },
-    { value: "oat", label: "Oat Milk" },
-    { value: "almond", label: "Almond Milk" },
-    { value: "rice", label: "Rice Milk" },
-  ];
 
   const handleCheckBoxChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -157,6 +144,21 @@ const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  if (loading) {
+    return (
+      <div className={`fixed inset-0 z-50 ${isOpen ? 'block' : 'hidden'}`}>
+        <div className="fixed inset-0 bg-black bg-opacity-50"></div>
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-hidden">
+            <div className="p-8 text-center">
+              <p>Loading menu options...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
