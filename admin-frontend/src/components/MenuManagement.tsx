@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMenu, MenuItem } from "../context/MenuContext";
 import { MenuItemTable } from "./MenuItemTable";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext"; // Add this import
+import { useAuth } from "../context/AuthContext";
 
 interface FormData {
   value: string;
@@ -23,6 +23,7 @@ export default function MenuManagement() {
   const {
     coffeeItems,
     milkItems,
+    loading: menuLoading,
     error: menuError,
     addMenuItem,
     updateMenuItem,
@@ -35,9 +36,9 @@ export default function MenuManagement() {
 
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     value: "",
     label: "",
@@ -45,54 +46,51 @@ export default function MenuManagement() {
     active: true,
   });
 
-  // Add retry logic for token issues
+  // Single loading effect with retry logic
   useEffect(() => {
     const loadData = async () => {
-      // Skip if we're not authenticated yet
       if (!isAuthenticated || !token) {
-        setLoading(false);
         setError("Please log in to access this page");
+        setInitialLoadAttempted(true);
         return;
       }
 
       try {
-        setLoading(true);
         setError(null);
-
-        // Add a small delay to ensure token is fully processed
+        // Wait a moment to ensure token is fully processed
         await new Promise((resolve) => setTimeout(resolve, 300));
+        const success = await fetchMenuItems();
 
-        await fetchMenuItems();
-        setLoading(false);
-      } catch (err) {
-        console.error("Failed to load menu items:", err);
-
-        // If we get "Not authenticated" and have retries left
-        if (
-          err instanceof Error &&
-          err.message.includes("Not authenticated") &&
-          retryCount < 3
-        ) {
+        if (!success && retryCount < 3) {
+          // If failed and we have retries left
           setRetryCount((prev) => prev + 1);
-
-          // Exponential backoff for retries
           const delay = Math.pow(2, retryCount) * 500;
           console.log(`Retrying in ${delay}ms (attempt ${retryCount + 1})`);
 
           setTimeout(() => {
             loadData();
           }, delay);
-        } else {
-          setLoading(false);
-          setError(
-            err instanceof Error ? err.message : "Failed to load menu items"
-          );
         }
+      } catch (err) {
+        console.error("Failed to load menu items:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load menu items"
+        );
+      } finally {
+        setInitialLoadAttempted(true);
       }
     };
 
-    loadData();
-  }, [isAuthenticated, token, fetchMenuItems, retryCount]);
+    if (!initialLoadAttempted) {
+      loadData();
+    }
+  }, [
+    isAuthenticated,
+    token,
+    fetchMenuItems,
+    retryCount,
+    initialLoadAttempted,
+  ]);
 
   // Automatically generate value from label
   useEffect(() => {
@@ -201,8 +199,8 @@ export default function MenuManagement() {
     }
   };
 
-  // Improved loading state with retry button
-  if (loading) {
+  // Simplified loading state
+  if (menuLoading || !initialLoadAttempted) {
     return (
       <div className="p-8 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta mb-4"></div>
@@ -211,14 +209,15 @@ export default function MenuManagement() {
     );
   }
 
-  // Handle both local error state and menu context error
+  // Handle errors
   const displayError = error || menuError;
   if (displayError) {
     return (
       <div className="p-4 text-red-500 bg-red-50 rounded-md">
         <h3 className="font-medium">Error</h3>
         <p className="mb-4">{displayError}</p>
-        {displayError.includes("Not authenticated") ? (
+        {displayError.includes("Not authenticated") ||
+        displayError.includes("session has expired") ? (
           <button
             onClick={() => navigate("/login")}
             className="px-4 py-2 bg-terracotta text-white rounded hover:bg-peach"
@@ -230,8 +229,7 @@ export default function MenuManagement() {
             onClick={() => {
               setError(null);
               setRetryCount(0);
-              setLoading(true);
-              fetchMenuItems().finally(() => setLoading(false));
+              fetchMenuItems();
             }}
             className="px-4 py-2 bg-terracotta text-white rounded hover:bg-peach"
           >

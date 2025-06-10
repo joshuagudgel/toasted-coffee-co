@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
 
 export interface MenuItem {
   id: number;
@@ -13,7 +13,7 @@ interface MenuContextType {
   milkItems: MenuItem[];
   loading: boolean;
   error: string | null;
-  fetchMenuItems: () => Promise<void>;
+  fetchMenuItems: () => Promise<boolean>; // Return success status
   addMenuItem: (item: Omit<MenuItem, "id">) => Promise<void>;
   updateMenuItem: (id: number, item: Partial<MenuItem>) => Promise<void>;
   deleteMenuItem: (id: number) => Promise<void>;
@@ -26,22 +26,21 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [coffeeItems, setCoffeeItems] = useState<MenuItem[]>([]);
   const [milkItems, setMilkItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false
   const [error, setError] = useState<string | null>(null);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-  const fetchMenuItems = async () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      throw new Error("Not authenticated");
-    }
-
+  // Improved fetch with better error handling
+  const fetchMenuItems = useCallback(async (): Promise<boolean> => {
     setLoading(true);
+    setError(null);
+    
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        throw new Error("Not authenticated");
+        setError("Not authenticated");
+        return false;
       }
 
       const response = await fetch(`${API_URL}/api/v1/menu`, {
@@ -49,6 +48,11 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
           Authorization: `Bearer ${token}`,
         },
       });
+
+      if (response.status === 401) {
+        setError("Your session has expired. Please log in again.");
+        return false;
+      }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch menu items: ${response.status}`);
@@ -59,14 +63,16 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
       // Separate items by type
       setCoffeeItems(data.filter((item) => item.type === "coffee_flavor"));
       setMilkItems(data.filter((item) => item.type === "milk_option"));
-      setError(null);
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
+      return false;
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
 
+  // Other methods remain similar but should return success/failure status
   const addMenuItem = async (item: Omit<MenuItem, "id">) => {
     try {
       const token = localStorage.getItem("authToken");
@@ -156,10 +162,9 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  useEffect(() => {
-    fetchMenuItems();
-  }, []);
-
+  // Remove the automatic fetchMenuItems call on mount
+  // This will be controlled by the component instead
+  
   return (
     <MenuContext.Provider
       value={{
