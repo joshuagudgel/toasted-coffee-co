@@ -46,42 +46,38 @@ export default function MenuManagement() {
     active: true,
   });
 
-  // Single loading effect with retry logic
+  // Update your useEffect to wait for authentication:
   useEffect(() => {
     const loadData = async () => {
-      if (!isAuthenticated || !token) {
-        setError("Please log in to access this page");
-        setInitialLoadAttempted(true);
-        return;
-      }
+      // Only attempt to load if authentication is confirmed
+      if (isAuthenticated && token) {
+        try {
+          setError(null);
+          // Add more delay to ensure token is fully processed
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          const success = await fetchMenuItems();
 
-      try {
-        setError(null);
-        // Wait a moment to ensure token is fully processed
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        const success = await fetchMenuItems();
-
-        if (!success && retryCount < 3) {
-          // If failed and we have retries left
-          setRetryCount((prev) => prev + 1);
-          const delay = Math.pow(2, retryCount) * 500;
-          console.log(`Retrying in ${delay}ms (attempt ${retryCount + 1})`);
-
-          setTimeout(() => {
-            loadData();
-          }, delay);
+          if (!success && retryCount < 2) {
+            // Limit to fewer retries
+            setRetryCount((prev) => prev + 1);
+          }
+        } catch (err) {
+          console.error("Failed to load menu items:", err);
+          setError(
+            err instanceof Error ? err.message : "Failed to load menu items"
+          );
+        } finally {
+          setInitialLoadAttempted(true);
         }
-      } catch (err) {
-        console.error("Failed to load menu items:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load menu items"
-        );
-      } finally {
+      } else if (!isAuthenticated) {
+        // Only set error if we're definitely not authenticated
+        setError("Please log in to access this page");
         setInitialLoadAttempted(true);
       }
     };
 
-    if (!initialLoadAttempted) {
+    // Only load if not already attempted or authentication changed
+    if (!initialLoadAttempted || retryCount > 0) {
       loadData();
     }
   }, [

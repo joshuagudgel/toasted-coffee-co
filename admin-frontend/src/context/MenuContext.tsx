@@ -31,7 +31,7 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-  // Improved fetch with better error handling
+  // Add refreshToken functionality:
   const fetchMenuItems = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
@@ -39,10 +39,12 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
+        console.log("No token found in localStorage");
         setError("Not authenticated");
         return false;
       }
 
+      console.log("Token found, making request");
       const response = await fetch(`${API_URL}/api/v1/menu`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -50,6 +52,11 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       if (response.status === 401) {
+        console.log("401 Unauthorized response");
+        // Try to refresh token here if you have refresh functionality
+        // const refreshed = await refreshToken();
+        // if (refreshed) return await fetchMenuItems();
+
         setError("Your session has expired. Please log in again.");
         return false;
       }
@@ -59,12 +66,14 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const data: MenuItem[] = await response.json();
+      console.log("Data received:", data.length, "items");
 
       // Separate items by type
       setCoffeeItems(data.filter((item) => item.type === "coffee_flavor"));
       setMilkItems(data.filter((item) => item.type === "milk_option"));
       return true;
     } catch (err) {
+      console.error("Error in fetchMenuItems:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
       return false;
     } finally {
