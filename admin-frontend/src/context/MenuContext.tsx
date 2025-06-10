@@ -32,6 +32,11 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
   const fetchMenuItems = async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem("authToken");

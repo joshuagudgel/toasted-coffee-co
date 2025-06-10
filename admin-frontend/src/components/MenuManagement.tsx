@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMenu, MenuItem } from "../context/MenuContext";
 import { MenuItemTable } from "./MenuItemTable";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // Add this import
 
 interface FormData {
   value: string;
@@ -21,21 +23,77 @@ export default function MenuManagement() {
   const {
     coffeeItems,
     milkItems,
-    loading,
-    error,
+    loading: menuLoading,
+    error: menuError,
     addMenuItem,
     updateMenuItem,
     deleteMenuItem,
+    fetchMenuItems,
   } = useMenu();
+
+  const { token, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     value: "",
     label: "",
     type: "coffee_flavor",
     active: true,
   });
+
+  // Add retry logic for token issues
+  useEffect(() => {
+    const loadData = async () => {
+      // Skip if we're not authenticated yet
+      if (!isAuthenticated || !token) {
+        setLoading(false);
+        setError("Please log in to access this page");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Add a small delay to ensure token is fully processed
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        await fetchMenuItems();
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load menu items:", err);
+
+        // If we get "Not authenticated" and have retries left
+        if (
+          err instanceof Error &&
+          err.message.includes("Not authenticated") &&
+          retryCount < 3
+        ) {
+          setRetryCount((prev) => prev + 1);
+
+          // Exponential backoff for retries
+          const delay = Math.pow(2, retryCount) * 500;
+          console.log(`Retrying in ${delay}ms (attempt ${retryCount + 1})`);
+
+          setTimeout(() => {
+            loadData();
+          }, delay);
+        } else {
+          setLoading(false);
+          setError(
+            err instanceof Error ? err.message : "Failed to load menu items"
+          );
+        }
+      }
+    };
+
+    loadData();
+  }, [isAuthenticated, token, fetchMenuItems, retryCount]);
 
   // Automatically generate value from label
   useEffect(() => {
@@ -92,6 +150,12 @@ export default function MenuManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!isAuthenticated) {
+      alert("Your session has expired. Please log in again.");
+      navigate("/login");
+      return;
+    }
+
     console.log("Sending to API:", formData);
     try {
       if (editingItem) {
@@ -103,7 +167,13 @@ export default function MenuManagement() {
       }
       resetForm();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "An error occurred");
+      // Handle auth errors specially
+      if (err instanceof Error && err.message.includes("Not authenticated")) {
+        alert("Your session has expired. Please log in again.");
+        navigate("/login");
+      } else {
+        alert(err instanceof Error ? err.message : "An error occurred");
+      }
     }
   };
 
@@ -112,16 +182,66 @@ export default function MenuManagement() {
       return;
     }
 
+    if (!isAuthenticated) {
+      alert("Your session has expired. Please log in again.");
+      navigate("/login");
+      return;
+    }
+
     try {
       await deleteMenuItem(id);
       alert("Menu item deleted successfully");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "An error occurred");
+      // Handle auth errors specially
+      if (err instanceof Error && err.message.includes("Not authenticated")) {
+        alert("Your session has expired. Please log in again.");
+        navigate("/login");
+      } else {
+        alert(err instanceof Error ? err.message : "An error occurred");
+      }
     }
   };
 
-  if (loading) return <div className="p-4">Loading menu items...</div>;
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+  // Improved loading state with retry button
+  if (loading) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta mb-4"></div>
+        <p className="text-gray-600">Loading menu items...</p>
+      </div>
+    );
+  }
+
+  // Handle both local error state and menu context error
+  const displayError = error || menuError;
+  if (displayError) {
+    return (
+      <div className="p-4 text-red-500 bg-red-50 rounded-md">
+        <h3 className="font-medium">Error</h3>
+        <p className="mb-4">{displayError}</p>
+        {displayError.includes("Not authenticated") ? (
+          <button
+            onClick={() => navigate("/login")}
+            className="px-4 py-2 bg-terracotta text-white rounded hover:bg-peach"
+          >
+            Go to Login
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              setError(null);
+              setRetryCount(0);
+              setLoading(true);
+              fetchMenuItems().finally(() => setLoading(false));
+            }}
+            className="px-4 py-2 bg-terracotta text-white rounded hover:bg-peach"
+          >
+            Try Again
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
