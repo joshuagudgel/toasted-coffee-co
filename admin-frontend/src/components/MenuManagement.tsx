@@ -23,7 +23,6 @@ export default function MenuManagement() {
   const {
     coffeeItems,
     milkItems,
-    loading: menuLoading,
     error: menuError,
     addMenuItem,
     updateMenuItem,
