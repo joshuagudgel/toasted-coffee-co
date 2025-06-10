@@ -73,11 +73,6 @@ func (h *MenuHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set active to true by default if not specified
-	if !menuItem.Active {
-		menuItem.Active = true
-	}
-
 	// Create the menu item
 	id, err := h.repo.Create(r.Context(), &menuItem)
 	if err != nil {

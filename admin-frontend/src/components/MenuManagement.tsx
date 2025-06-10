@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMenu, MenuItem } from "../context/MenuContext";
 import { MenuItemTable } from "./MenuItemTable";
 
@@ -8,6 +8,14 @@ interface FormData {
   type: "coffee_flavor" | "milk_option";
   active: boolean;
 }
+
+const generateValueFromLabel = (label: string): string => {
+  return label
+    .toLowerCase()
+    .replace(/\s+/g, "_") // Replace spaces with underscores
+    .replace(/[^a-z0-9_]/g, "") // Remove special characters
+    .replace(/_{2,}/g, "_"); // Replace multiple underscores with single one
+};
 
 export default function MenuManagement() {
   const {
@@ -28,6 +36,17 @@ export default function MenuManagement() {
     type: "coffee_flavor",
     active: true,
   });
+
+  // Automatically generate value from label
+  useEffect(() => {
+    if (formData.label && !editingItem) {
+      const generatedValue = generateValueFromLabel(formData.label);
+      setFormData((prev) => ({
+        ...prev,
+        value: generatedValue,
+      }));
+    }
+  }, [formData.label, editingItem]);
 
   // Form handling
   const handleChange = (
@@ -73,6 +92,7 @@ export default function MenuManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log("Sending to API:", formData);
     try {
       if (editingItem) {
         await updateMenuItem(editingItem.id, formData);
@@ -125,24 +145,6 @@ export default function MenuManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Value (identifier)
-                </label>
-                <input
-                  type="text"
-                  name="value"
-                  value={formData.value}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                  placeholder="e.g., french_toast"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Unique identifier (no spaces, use underscores)
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Label (display name)
                 </label>
                 <input
@@ -153,9 +155,46 @@ export default function MenuManagement() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   required
                   placeholder="e.g., French Toast"
+                  autoFocus
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Human-readable label shown to users
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Value (identifier)
+                </label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    name="value"
+                    value={formData.value}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                    placeholder="auto-generated from label"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const generatedValue = generateValueFromLabel(
+                        formData.label
+                      );
+                      setFormData((prev) => ({
+                        ...prev,
+                        value: generatedValue,
+                      }));
+                    }}
+                    className="ml-2 px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                    title="Regenerate from label"
+                  >
+                    ↻
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-generated identifier (editable if needed)
                 </p>
               </div>
 
@@ -213,17 +252,17 @@ export default function MenuManagement() {
       )}
 
       {/* Tables */}
-      <MenuItemTable 
-        title="Coffee Flavors" 
-        items={coffeeItems} 
-        onEdit={startEditingItem} 
-        onDelete={handleDelete} 
+      <MenuItemTable
+        title="Coffee Flavors"
+        items={coffeeItems}
+        onEdit={startEditingItem}
+        onDelete={handleDelete}
       />
-      <MenuItemTable 
-        title="Milk Options" 
-        items={milkItems} 
-        onEdit={startEditingItem} 
-        onDelete={handleDelete} 
+      <MenuItemTable
+        title="Milk Options"
+        items={milkItems}
+        onEdit={startEditingItem}
+        onDelete={handleDelete}
       />
     </div>
   );
