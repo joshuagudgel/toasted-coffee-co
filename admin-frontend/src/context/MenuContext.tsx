@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
+import React, { createContext, useState, useContext, useCallback } from "react";
 
 export interface MenuItem {
   id: number;
@@ -35,7 +35,7 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchMenuItems = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
@@ -164,7 +164,7 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Remove the automatic fetchMenuItems call on mount
   // This will be controlled by the component instead
-  
+
   return (
     <MenuContext.Provider
       value={{
