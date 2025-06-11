@@ -56,8 +56,6 @@ export default function MenuManagement() {
       if (isAuthenticated && token) {
         try {
           setError(null);
-          // Add more delay to ensure token is fully processed
-          await new Promise((resolve) => setTimeout(resolve, 500));
           const success = await fetchMenuItems();
 
           if (!success && retryCount < MAX_RETRIES) {
