@@ -19,6 +19,9 @@ const generateValueFromLabel = (label: string): string => {
     .replace(/_{2,}/g, "_"); // Replace multiple underscores with single one
 };
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1000; // ms
+
 export default function MenuManagement() {
   const {
     coffeeItems,
@@ -57,9 +60,11 @@ export default function MenuManagement() {
           await new Promise((resolve) => setTimeout(resolve, 500));
           const success = await fetchMenuItems();
 
-          if (!success && retryCount < 2) {
+          if (!success && retryCount < MAX_RETRIES) {
             // Limit to fewer retries
-            setRetryCount((prev) => prev + 1);
+            setTimeout(() => {
+              setRetryCount((prev) => prev + 1);
+            }, RETRY_DELAY);
           }
         } catch (err) {
           console.error("Failed to load menu items:", err);
@@ -75,6 +80,14 @@ export default function MenuManagement() {
         setInitialLoadAttempted(true);
       }
     };
+
+    // If we've tried too many times, stop trying
+    if (retryCount >= MAX_RETRIES) {
+      setError(
+        "Could not load menu items after multiple attempts. Please try refreshing the page."
+      );
+      return;
+    }
 
     // Only load if not already attempted or authentication changed
     if (!initialLoadAttempted || retryCount > 0) {
