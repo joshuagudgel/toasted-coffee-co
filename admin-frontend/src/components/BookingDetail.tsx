@@ -179,6 +179,9 @@ export default function BookingDetail() {
       // Update booking state with edited values
       setBooking(editedBooking);
       setIsEditing(false);
+
+      // TODO: Success message
+      // Use a non-blocking notification instead of alert if possible
       alert("Booking updated successfully");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error updating booking");
@@ -223,6 +226,8 @@ export default function BookingDetail() {
         throw new Error(`Failed to delete booking: ${response.status}`);
       }
 
+      // TODO: Success message
+      // Use a non-blocking notification instead of alert if possible
       alert("Booking deleted successfully");
       navigate("/"); // Redirect to booking list
     } catch (err) {
@@ -278,6 +283,8 @@ export default function BookingDetail() {
         );
       }
 
+      // TODO: Success message
+      // Use a non-blocking notification instead of alert if possible
       alert(
         `Booking ${booking?.archived ? "unarchived" : "archived"} successfully`
       );
@@ -294,8 +301,28 @@ export default function BookingDetail() {
   };
 
   // Show loading state
-  if (loading) return <p>Loading booking details...</p>;
-  if (error) return <p className="text-red-500">Error: {error}</p>;
+  if (loading) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta mb-4"></div>
+        <p className="text-gray-600">Loading booking details...</p>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-4 text-red-500 bg-red-50 rounded-md">
+        <h3 className="font-medium">Error</h3>
+        <p className="mb-4">{error}</p>
+        <button
+          onClick={() => navigate("/")}
+          className="px-4 py-2 bg-terracotta text-white rounded hover:bg-peach"
+        >
+          Return to Bookings
+        </button>
+      </div>
+    );
+  }
   if (!booking || !editedBooking) return <p>Booking not found</p>;
 
   return (
@@ -591,26 +618,38 @@ export default function BookingDetail() {
           <button
             onClick={handleArchiveToggle}
             disabled={isArchiving}
-            className={`px-4 py-2 text-white rounded disabled:opacity-50 ${
+            className={`px-4 py-2 text-white rounded disabled:opacity-50 flex items-center ${
               booking.archived
                 ? "bg-green-600 hover:bg-green-700"
                 : "bg-amber-600 hover:bg-amber-700"
             }`}
           >
-            {isArchiving
-              ? booking.archived
-                ? "Unarchiving..."
-                : "Archiving..."
-              : booking.archived
-              ? "Unarchive Booking"
-              : "Archive Booking"}
+            {isArchiving ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-b-2 border-white mr-2"></div>
+                <span>
+                  {booking.archived ? "Unarchiving..." : "Archiving..."}
+                </span>
+              </>
+            ) : booking.archived ? (
+              "Unarchive Booking"
+            ) : (
+              "Archive Booking"
+            )}
           </button>
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center"
           >
-            {isDeleting ? "Deleting..." : "Delete Booking"}
+            {isDeleting ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-b-2 border-white mr-2"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              "Delete Booking"
+            )}
           </button>
         </div>
       )}

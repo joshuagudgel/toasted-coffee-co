@@ -19,6 +19,9 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
 
   useEffect(() => {
     async function fetchBookings() {
+      setLoading(true);
+      setError(null);
+
       try {
         // Get JWT token from localStorage
         const token = localStorage.getItem("authToken");
@@ -64,7 +67,14 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
     setIncludeArchived((prev) => !prev);
   };
 
-  if (loading) return <p>Loading bookings...</p>;
+  if (loading) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracotta mb-4"></div>
+        <p className="text-gray-600">Loading bookings...</p>
+      </div>
+    );
+  }
   if (error) return <p className="text-red-500">Error: {error}</p>;
 
   return (
