@@ -5,6 +5,9 @@ import heroSpillTop from "../../assets/hero-spill-top.png";
 import heroSpillBottom from "../../assets/hero-spill-bottom.png";
 import heroSpillLeft from "../../assets/hero-spill-left.png";
 import heroCircleBottom from "../../assets/hero-circle-bottom.png";
+import heroCircleLeft from "../../assets/hero-circle-left.png";
+import heroRibbonsTop from "../../assets/hero-ribbons-top.png";
+import heroRibbonsBottom from "../../assets/hero-ribbons-bottom.png";
 
 const Hero: React.FC = () => {
   const { openModal } = useBooking();
@@ -35,9 +38,8 @@ const Hero: React.FC = () => {
           aria-hidden="true"
         />
       </div>
-
       <div
-        className={`absolute bottom-0 left-0 right-0 w-full z-[1] transition-transform duration-1000 ease-out delay-300 ${
+        className={`absolute bottom-0 left-0 right-0 w-full z-[1] transition-transform duration-1000 ease-out ${
           animated ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -64,6 +66,7 @@ const Hero: React.FC = () => {
         />
       </div>
 
+      {/* Circle animations */}
       <div
         className={`absolute bottom-0 right-0 h-auto z-[1] transition-all duration-1000 ease-out delay-150 ${
           animated
@@ -75,6 +78,43 @@ const Hero: React.FC = () => {
           src={heroCircleBottom}
           alt=""
           className="w-full h-auto"
+          aria-hidden="true"
+        />
+      </div>
+      <div
+        className={`absolute left-0 h-auto z-[1] transition-all duration-1000 ease-out delay-150 ${
+          animated ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <img
+          src={heroCircleLeft}
+          alt=""
+          className="w-full h-auto"
+          aria-hidden="true"
+        />
+      </div>
+      {/* Ribbon animations */}
+      <div
+        className={`absolute top-0 left-0 right-0 w-full z-[1] transition-transform duration-1000 ease-out delay-300 ${
+          animated ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <img
+          src={heroRibbonsTop}
+          alt=""
+          className="w-full h-auto object-cover"
+          aria-hidden="true"
+        />
+      </div>
+      <div
+        className={`absolute bottom-0 left-0 right-0 w-full z-[1] transition-transform duration-1000 ease-out delay-300 ${
+          animated ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <img
+          src={heroRibbonsBottom}
+          alt=""
+          className="w-full h-auto object-cover"
           aria-hidden="true"
         />
       </div>
