@@ -122,10 +122,10 @@ const Hero: React.FC = () => {
           aria-hidden="true"
         />
       </div>
-      {/* END: Animations and Decorative Elements z-index 10-29*/}
+      {/* END: Animations and Decorative Elements z-index 10-29+*/}
 
-      {/* Content container */}
-      <div className="relative z-30 h-full flex flex-col items-center justify-center text-center px-4 md:px-8">
+      {/* Content container z-index=50+*/}
+      <div className="relative z-[50] h-full flex flex-col items-center justify-center text-center px-4 md:px-8">
         <h1
           className={`text-5xl md:text-7xl font-bold text-mocha mb-4 tracking-tight transition-opacity duration-1000 delay-500 ${
             animated ? "opacity-100" : "opacity-0"

@@ -7,7 +7,7 @@ const Navbar: React.FC = () => {
   const { openModal } = useBooking();
 
   return (
-    <nav className="absolute top-0 left-0 z-20 w-full py-4 px-6">
+    <nav className="absolute top-0 left-0 z-[100] w-full py-4 px-6">
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo */}
         <div className="text-2xl font-bold text-mocha">TOASTED COFFEE CO</div>
