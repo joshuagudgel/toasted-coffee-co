@@ -5,6 +5,7 @@ import Menu from "./components/sections/Menu";
 import BookingModal from "./components/ui/BookingModal";
 import { BookingProvider, useBooking } from "./context/BookingContext";
 import { MenuProvider } from "./context/MenuContext";
+import ParallaxExperiment from "./components/ParallaxExperiment";
 
 const AppContent = () => {
   const { isModalOpen, selectedPackage, closeModal } = useBooking();
@@ -20,6 +21,7 @@ const AppContent = () => {
         selectedPackage={selectedPackage}
       />
       <Menu />
+      <ParallaxExperiment />
       {/* Other sections will be added here later */}
     </div>
   );
