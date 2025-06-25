@@ -17,12 +17,6 @@ const Navbar: React.FC = () => {
           <a
             href="#"
             className="font-medium text-mocha hover:text-latte transition"
-          >
-            Home
-          </a>
-          <a
-            href="#"
-            className="font-medium text-mocha hover:text-latte transition"
             onClick={() => scrollToSection("packages")}
           >
             Packages
@@ -76,25 +70,13 @@ const Navbar: React.FC = () => {
               href="#"
               className="text-parchment hover:text-latte transition py-2"
             >
-              Home
-            </a>
-            <a
-              href="#"
-              className="text-parchment hover:text-latte transition py-2"
-            >
-              About
-            </a>
-            <a
-              href="#"
-              className="text-parchment hover:text-latte transition py-2"
-            >
               Packages
             </a>
             <a
               href="#"
               className="text-parchment hover:text-latte transition py-2"
             >
-              Contact
+              Menu
             </a>
             <button className="mt-2 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition w-full">
               Book Now

@@ -39,24 +39,16 @@ const Menu: React.FC = () => {
 
       {/* Main Content z-index 20+ */}
       <div className="container mx-auto px-4 relative z-[20] text-center">
-        <div className="flex items-center justify-center mb-8">
-          <div className="hidden md:block w-24 h-1 bg-terracotta rounded-full"></div>
-          <h2 className="text-4xl font-bold text-espresso mx-4 tracking-tight">
-            Our Menu
-          </h2>
-          <div className="hidden md:block w-24 h-1 bg-terracotta rounded-full"></div>
-        </div>
-        <p className="text-lg text-espresso max-w-xl mx-auto mb-10">
-          We source only the highest quality beans for our signature cold brew.
-          Choose from our specialty flavors and milk options for a perfectly
-          crafted experience.
-        </p>
-
         {/* Menu content card */}
         <div className="mt-12 mx-auto max-w-4xl px-4 bg-parchment rounded-xl p-8 shadow-lg relative z-[30]">
           <h2 className="text-3xl md:text-4xl font-bold text-mocha mb-4 tracking-tight">
             TOASTED COFFEE CO
           </h2>
+          <p className="text-base text-espresso max-w-xl mx-auto mb-10">
+            We source only the highest quality beans for our signature cold
+            brew. Choose from our specialty flavors and milk options for a
+            perfectly crafted experience.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h2 className="text-2xl font-bold text-terracotta mb-4 tracking-tight">
