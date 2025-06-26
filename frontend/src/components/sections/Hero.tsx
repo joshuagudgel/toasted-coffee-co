@@ -24,7 +24,7 @@ const Hero: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative h-screen">
+    <div className="relative h-screen overflow-hidden">
       {/* Background Elements z-index 1-9*/}
       <div className="absolute inset-0 z-[1] bg-peach"></div>
 
