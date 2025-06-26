@@ -1,9 +1,5 @@
 import React from "react";
 import { useBooking } from "../../context/BookingContext";
-import BeanShape from "../ui/BeanShape";
-//import packagesBeanTop from "../../assets/packages-bean-top.png";
-//import packagesBeanLeft from "../../assets/packages-bean-left.png";
-//import packagesBeanBottom from "../../assets/packages-bean-bottom.png";
 
 type Package = {
   id: number;
@@ -46,38 +42,6 @@ const Packages: React.FC = () => {
       <div className="absolute inset-0 z-[1] bg-parchment"></div>
 
       {/* Background Decorative Elements z-index 10-19 */}
-      {/* Top right bean */}
-      <BeanShape
-        position="z-[10]"
-        color="#DD9D79"
-        style={{
-          left: "75%",
-          top: "25%",
-          transform: "translate(-50%, -50%) scale(1.5) rotate(15deg)",
-        }}
-      />
-
-      {/* Bottom left bean */}
-      <BeanShape
-        position="z-[10]"
-        color="#FAE7D3"
-        style={{
-          left: "25%",
-          top: "66.67%",
-          transform: "translate(-50%, -50%) scale(1.2) rotate(-20deg)",
-        }}
-      />
-
-      {/* Bottom right bean */}
-      <BeanShape
-        position="z-[10]"
-        color={"#DD9D79"}
-        style={{
-          left: "80%",
-          top: "80%",
-          transform: "translate(-50%, -50%) scale(1.8) rotate(45deg)",
-        }}
-      />
 
       {/* Main Content z-index 20+ */}
       <div className="container mx-auto px-4 relative z-[20]">

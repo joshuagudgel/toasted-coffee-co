@@ -1,5 +1,4 @@
 import React from "react";
-import BeanShape from "../ui/BeanShape";
 
 const Contact: React.FC = () => {
   return (
@@ -8,25 +7,6 @@ const Contact: React.FC = () => {
       <div className="absolute inset-0 z-[1] bg-espresso bg-opacity-60"></div>
 
       {/* Background Decorative Elements z-index 10-19 */}
-      <BeanShape
-        position="z-[10]"
-        color="#DD9D79"
-        style={{
-          left: "15%",
-          bottom: "20%",
-          transform: "translate(-50%, 50%) scale(1.2) rotate(25deg)",
-        }}
-      />
-
-      <BeanShape
-        position="z-[10]"
-        color="#BF7454"
-        style={{
-          right: "10%",
-          top: "30%",
-          transform: "translate(50%, -50%) scale(1.1) rotate(-15deg)",
-        }}
-      />
 
       {/* Main Content z-index 20+ */}
       <div className="container mx-auto px-4 relative z-[20] text-center">

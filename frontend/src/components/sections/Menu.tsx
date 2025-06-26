@@ -1,6 +1,5 @@
 import React from "react";
 import { useMenu } from "../../context/MenuContext";
-import BeanShape from "../ui/BeanShape";
 
 const Menu: React.FC = () => {
   const { coffeeOptions, milkOptions, loading } = useMenu();
@@ -15,27 +14,6 @@ const Menu: React.FC = () => {
       <div className="absolute inset-0 z-[1] bg-caramel"></div>
 
       {/* Background Decorative Elements z-index 10-19 */}
-      {/* Top left bean */}
-      <BeanShape
-        position="z-[10]"
-        color="#DD9D79"
-        style={{
-          left: "20%",
-          top: "30%",
-          transform: "translate(-50%, -50%) scale(1.3) rotate(-25deg)",
-        }}
-      />
-
-      {/* Bottom right bean */}
-      <BeanShape
-        position="z-[10]"
-        color="#BF7454"
-        style={{
-          left: "85%",
-          top: "70%",
-          transform: "translate(-50%, -50%) scale(1.6) rotate(15deg)",
-        }}
-      />
 
       {/* Main Content z-index 20+ */}
       <div className="container mx-auto px-4 relative z-[20] text-center">
