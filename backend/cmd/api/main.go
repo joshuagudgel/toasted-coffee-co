@@ -14,6 +14,7 @@ import (
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/database"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/handlers"
 	custommiddleware "github.com/joshuagudgel/toasted-coffee/backend/internal/middleware"
+	"github.com/joshuagudgel/toasted-coffee/backend/internal/services"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -167,10 +168,16 @@ func main() {
 	userRepo := database.NewUserRepository(db)
 	menuRepo := database.NewMenuRepository(db)
 
+	// First, create the email service as a shared resource
+	emailService := services.NewEmailService()
+
 	// Initialize handlers
-	bookingHandler := handlers.NewBookingHandler(bookingRepo)
+	bookingHandler := handlers.NewBookingHandler(bookingRepo, emailService)
 	authHandler := handlers.NewAuthHandler(userRepo)
 	menuHandler := handlers.NewMenuHandler(menuRepo)
+
+	// Create the contact handler with the email service
+	contactHandler := handlers.NewContactHandler(emailService)
 
 	// Initialize router
 	r := chi.NewRouter()
@@ -188,6 +195,9 @@ func main() {
 		r.Post("/bookings", bookingHandler.Create)
 		r.Get("/menu", menuHandler.GetAll)
 		r.Get("/menu/{type}", menuHandler.GetByType)
+
+		// Add the contact endpoint here (public)
+		r.Post("/contact", contactHandler.HandleInquiry)
 
 		// Protected routes
 		r.Group(func(r chi.Router) {

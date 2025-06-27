@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useBooking } from "../../context/BookingContext";
+import { useInquiry } from "../../context/InquiryContext";
 import { scrollToSection } from "../../utils/scrollUtils";
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { openModal } = useBooking();
+  const { openInquiryModal } = useInquiry();
 
   return (
     <nav className="absolute top-0 left-0 z-[100] w-full py-4 px-6">
@@ -14,20 +16,14 @@ const Navbar: React.FC = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
-          <a
-            href="#"
-            className="font-medium text-mocha hover:text-latte transition"
-            onClick={() => scrollToSection("packages")}
+          <button
+            className="ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
+            onClick={() => {
+              openInquiryModal();
+            }}
           >
-            Packages
-          </a>
-          <a
-            href="#"
-            className="font-medium text-mocha hover:text-latte transition"
-            onClick={() => scrollToSection("menu")}
-          >
-            Menu
-          </a>
+            Inquire
+          </button>
           <button
             className="ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
             onClick={() => {
@@ -68,17 +64,40 @@ const Navbar: React.FC = () => {
           <div className="container mx-auto flex flex-col space-y-3 px-6">
             <a
               href="#"
-              className="text-parchment hover:text-latte transition py-2"
+              className="font-medium text-mocha hover:text-latte transition"
+              onClick={() => scrollToSection("packages")}
             >
               Packages
             </a>
             <a
               href="#"
-              className="text-parchment hover:text-latte transition py-2"
+              className="font-medium text-mocha hover:text-latte transition"
+              onClick={() => scrollToSection("menu")}
             >
               Menu
             </a>
-            <button className="mt-2 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition w-full">
+            <a
+              href="#"
+              className="font-medium text-mocha hover:text-latte transition"
+              onClick={() => scrollToSection("contact")}
+            >
+              Contact
+            </a>
+            <button
+              className="font-medium text-mocha hover:text-latte transition"
+              onClick={() => {
+                openInquiryModal();
+              }}
+            >
+              Inquire
+            </button>
+            <button
+              className="ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
+              onClick={() => {
+                setIsMenuOpen(false);
+                openModal();
+              }}
+            >
               Book Now
             </button>
           </div>

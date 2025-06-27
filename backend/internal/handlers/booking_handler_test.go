@@ -221,7 +221,7 @@ func TestCreateBookingHandler(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request body
 			body, _ := json.Marshal(tc.booking)
@@ -409,7 +409,7 @@ func TestUpdateBookingHandler(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request with URL parameter and body
 			body, _ := json.Marshal(tc.updatedBooking)
@@ -531,7 +531,7 @@ func TestGetAllBookingsHandler(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request
 			req := httptest.NewRequest("GET", "/api/v1/bookings", nil)
@@ -641,7 +641,7 @@ func TestGetBookingByIDHandler(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request with URL parameter
 			req := httptest.NewRequest("GET", "/api/v1/bookings/"+tc.bookingID, nil)
@@ -764,7 +764,7 @@ func TestDeleteBookingHandler(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request with URL parameter
 			req := httptest.NewRequest("DELETE", "/api/v1/bookings/"+tc.bookingID, nil)
@@ -807,7 +807,7 @@ func TestResponseHeaders(t *testing.T) {
 	}
 
 	// Create handler with mock
-	handler := handlers.NewBookingHandler(mockRepo)
+	handler := handlers.NewBookingHandler(mockRepo, nil)
 
 	// Create request
 	req := httptest.NewRequest("GET", "/api/v1/bookings", nil)
@@ -909,7 +909,7 @@ func TestArchiveBookingHandler(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request with URL parameter
 			req := httptest.NewRequest("POST", "/api/v1/bookings/"+tc.bookingID+"/archive", nil)
@@ -1035,7 +1035,7 @@ func TestUnarchiveBookingHandler(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request with URL parameter
 			req := httptest.NewRequest("POST", "/api/v1/bookings/"+tc.bookingID+"/unarchive", nil)
@@ -1168,7 +1168,7 @@ func TestGetAllBookingsWithArchiveFiltering(t *testing.T) {
 			}
 
 			// Create handler with mock
-			handler := handlers.NewBookingHandler(mockRepo)
+			handler := handlers.NewBookingHandler(mockRepo, nil)
 
 			// Create request with query parameters
 			req := httptest.NewRequest("GET", "/api/v1/bookings"+tc.queryParams, nil)

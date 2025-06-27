@@ -30,17 +30,17 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   // Convert menu items to usable format for the form
   const coffeeChoices = coffeeOptions
-    .filter(item => item.active) // Only show active items
-    .map(item => ({
+    .filter((item) => item.active) // Only show active items
+    .map((item) => ({
       value: item.value,
-      label: item.label
+      label: item.label,
     }));
-  
+
   const milkChoices = milkOptions
-    .filter(item => item.active)
-    .map(item => ({
+    .filter((item) => item.active)
+    .map((item) => ({
       value: item.value,
-      label: item.label
+      label: item.label,
     }));
 
   const [formData, setFormData] = useState<BookingFormData>({
@@ -135,7 +135,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
       const data = await response.json();
       console.log("Booking submitted:", data);
       alert("Thank you for your booking request! We'll be in touch shortly.");
-      
+
       // Reset form data to initial state
       setFormData({
         name: "",
@@ -148,9 +148,9 @@ const BookingModal: React.FC<BookingModalProps> = ({
         milkOptions: [],
         location: "",
         notes: "",
-        package: "",  // Or keep selectedPackage if you want
+        package: "", // Or keep selectedPackage if you want
       });
-      
+
       onClose();
     } catch (error) {
       console.error("Error:", error);
@@ -162,7 +162,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   if (loading) {
     return (
-      <div className={`fixed inset-0 z-50 ${isOpen ? 'block' : 'hidden'}`}>
+      <div className={`fixed inset-0 z-50 ${isOpen ? "block" : "hidden"}`}>
         <div className="fixed inset-0 bg-black bg-opacity-50"></div>
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-hidden">

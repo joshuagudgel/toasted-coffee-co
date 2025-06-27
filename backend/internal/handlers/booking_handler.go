@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -13,16 +14,21 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/database"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/models"
+	"github.com/joshuagudgel/toasted-coffee/backend/internal/services"
 )
 
 // BookingHandler handles HTTP requests related to bookings
 type BookingHandler struct {
-	repo database.BookingRepositoryInterface // Changed from *database.BookingRepository
+	repo         database.BookingRepositoryInterface
+	emailService *services.EmailService
 }
 
 // NewBookingHandler creates a new booking handler
-func NewBookingHandler(repo database.BookingRepositoryInterface) *BookingHandler {
-	return &BookingHandler{repo: repo}
+func NewBookingHandler(repo database.BookingRepositoryInterface, emailService *services.EmailService) *BookingHandler {
+	return &BookingHandler{
+		repo:         repo,
+		emailService: emailService,
+	}
 }
 
 // Create handles creation of a new booking
@@ -59,8 +65,35 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	id, err := h.repo.Create(r.Context(), &booking)
 	if err != nil {
 		log.Printf("Error creating booking: %v", err)
+
+		// Send failure notification email
+		emailErr := h.emailService.SendBookingFailureAlert(
+			booking.Name,
+			booking.Email,
+			booking.Phone,
+			fmt.Sprintf("Database error: %v", err),
+		)
+		if emailErr != nil {
+			log.Printf("Failed to send booking failure alert: %v", emailErr)
+		}
+
 		http.Error(w, "Failed to create booking", http.StatusInternalServerError)
 		return
+	}
+
+	// Send confirmation email
+	emailErr := h.emailService.SendBookingConfirmation(
+		id,
+		booking.Name,
+		booking.Date,
+		booking.Time,
+		booking.Location,
+		booking.People,
+		booking.Package,
+	)
+	if emailErr != nil {
+		// Just log the error but don't fail the request
+		log.Printf("Failed to send confirmation email: %v", emailErr)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
