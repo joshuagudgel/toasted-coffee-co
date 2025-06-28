@@ -48,6 +48,16 @@ func TestSanitizeInput(t *testing.T) {
 			expected: "&lt;script&gt;alert(&#39;XSS&#39;);&lt;/script&gt;",
 		},
 		{
+			name:     "Handles single quotes",
+			input:    "Text with 'single' quotes",
+			expected: "Text with &#39;single&#39; quotes",
+		},
+		{
+			name:     "Handles double quotes",
+			input:    "Text with \"double\" quotes",
+			expected: "Text with &#34;double&#34; quotes",
+		},
+		{
 			name:     "SVG based XSS vector",
 			input:    "<svg><g/onload=alert(2)//<p>",
 			expected: "",
