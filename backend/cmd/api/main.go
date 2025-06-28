@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate" // Add this import
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/config"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/database"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/handlers"
@@ -189,21 +191,41 @@ func main() {
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public routes (no auth required)
-		r.Post("/auth/login", authHandler.Login)
-		r.Post("/auth/refresh", authHandler.RefreshToken)
-		r.Post("/bookings", bookingHandler.Create)
-		r.Get("/menu", menuHandler.GetAll)
-		r.Get("/menu/{type}", menuHandler.GetByType)
+		// Public routes with rate limiting
 
-		// Add the contact endpoint here (public)
-		r.Post("/contact", contactHandler.HandleInquiry)
-
-		// Protected routes
+		// Auth endpoints - limit to 20 requests per minute
+		// This prevents brute force attacks while allowing legitimate login attempts
 		r.Group(func(r chi.Router) {
-			r.Use(custommiddleware.JWTAuth) // This takes care of authentication
+			r.Use(httprate.LimitByIP(20, 1*time.Minute))
+			r.Post("/auth/login", authHandler.Login)
+			r.Post("/auth/refresh", authHandler.RefreshToken)
+		})
 
-			// Bookings
+		// Booking creation - limit to 10 requests per minute
+		// This prevents spam bookings while allowing legitimate use
+		r.With(httprate.LimitByIP(10, 1*time.Minute)).Post("/bookings", bookingHandler.Create)
+
+		// Contact/inquiry endpoint - limit to 5 requests per minute
+		// This is more restricted since it's a common target for spam
+		r.With(httprate.LimitByIP(5, 1*time.Minute)).Post("/contact", contactHandler.HandleInquiry)
+
+		// Public read-only endpoints - higher limits (30 per minute)
+		// These are less sensitive and used more frequently by legitimate users
+		r.Group(func(r chi.Router) {
+			r.Use(httprate.LimitByIP(30, 1*time.Minute))
+			r.Get("/menu", menuHandler.GetAll)
+			r.Get("/menu/{type}", menuHandler.GetByType)
+		})
+
+		// Protected routes - admin functions with JWT auth
+		r.Group(func(r chi.Router) {
+			r.Use(custommiddleware.JWTAuth)
+
+			// You can also rate limit protected routes, but with higher thresholds
+			// This prevents API abuse even from authenticated users
+			r.Use(httprate.LimitByIP(60, 1*time.Minute))
+
+			// Bookings management
 			r.Get("/bookings", bookingHandler.GetAll)
 			r.Get("/bookings/{id}", bookingHandler.GetByID)
 			r.Delete("/bookings/{id}", bookingHandler.Delete)
@@ -221,14 +243,14 @@ func main() {
 		})
 	})
 
-	// Health check endpoint
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+	// Health check with minimal rate limiting
+	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
-	// Check Database Connection
-	r.Get("/api/v1/db-check", func(w http.ResponseWriter, r *http.Request) {
+	// DB check with minimal rate limiting
+	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/api/v1/db-check", func(w http.ResponseWriter, r *http.Request) {
 		// Test basic connectivity
 		if err := db.Pool.Ping(r.Context()); err != nil {
 			log.Printf("Database ping failed: %v", err)
