@@ -7,14 +7,16 @@ import (
 	"os"
 	"time"
 
+	"github.com/microcosm-cc/bluemonday"
 	"gopkg.in/mail.v2"
 )
 
 // EmailService handles sending emails
 type EmailService struct {
-	dialer *mail.Dialer
-	from   string
-	to     string
+	dialer    *mail.Dialer
+	from      string
+	to        string
+	sanitizer *bluemonday.Policy
 }
 
 // NewEmailService creates a new email service
@@ -50,21 +52,28 @@ func NewEmailService() *EmailService {
 		ServerName: smtpHost,
 	}
 
+	sanitizer := bluemonday.StrictPolicy()
 	return &EmailService{
-		dialer: dialer,
-		from:   smtpUser,
-		to:     toEmail,
+		dialer:    dialer,
+		from:      smtpUser,
+		to:        toEmail,
+		sanitizer: sanitizer,
 	}
+}
+
+// sanitizeInput sanitizes user input to prevent XSS attacks
+func (s *EmailService) sanitizeInput(input string) string {
+	return s.sanitizer.Sanitize(input)
 }
 
 // SendBookingConfirmation sends an email notification for a successful booking
 func (s *EmailService) SendBookingConfirmation(bookingID int, name, date, time, location string, people int, pkg string) error {
-	// Recover from panic
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("RECOVERED from email panic: %v", r)
-		}
-	}()
+	// Sanitize all user inputs
+	name = s.sanitizeInput(name)
+	date = s.sanitizeInput(date)
+	time = s.sanitizeInput(time)
+	location = s.sanitizeInput(location)
+	pkg = s.sanitizeInput(pkg)
 
 	m := mail.NewMessage()
 
@@ -96,6 +105,12 @@ func (s *EmailService) SendBookingConfirmation(bookingID int, name, date, time, 
 
 // SendBookingFailureAlert sends an email notification for a failed booking attempt
 func (s *EmailService) SendBookingFailureAlert(name, email, phone string, errorDetails string) error {
+	// Sanitize all user inputs
+	name = s.sanitizeInput(name)
+	email = s.sanitizeInput(email)
+	phone = s.sanitizeInput(phone)
+	errorDetails = s.sanitizeInput(errorDetails)
+
 	m := mail.NewMessage()
 
 	// Set headers
@@ -134,6 +149,12 @@ func (s *EmailService) SendBookingFailureAlert(name, email, phone string, errorD
 
 // SendInquiry sends an email notification for customer inquiries or contact form submissions
 func (s *EmailService) SendInquiry(name, email, phone, message string) error {
+	// Sanitize all user inputs
+	name = s.sanitizeInput(name)
+	email = s.sanitizeInput(email)
+	phone = s.sanitizeInput(phone)
+	message = s.sanitizeInput(message)
+
 	// Recover from panic
 	defer func() {
 		if r := recover(); r != nil {
