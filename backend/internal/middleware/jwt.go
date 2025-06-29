@@ -16,26 +16,36 @@ func JWTAuth(next http.Handler) http.Handler {
 		startTime := time.Now()
 		log.Printf("JWT VALIDATION START: Request to %s", r.URL.Path)
 		
-		authHeader := r.Header.Get("Authorization")
+		// First try to get token from cookie
+		tokenCookie, err := r.Cookie("access_token")
+		var tokenString string
+		
+		if err == nil {
+			// Found token in cookie
+			tokenString = tokenCookie.Value
+		} else {
+			// Fall back to Authorization header for API clients
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				log.Printf("JWT VALIDATION: No token found for %s", r.URL.Path)
+				http.Error(w, "Authentication required", http.StatusUnauthorized)
+				return
+			}
 
-		// Check if Authorization header exists
-		if authHeader == "" {
-			log.Printf("JWT VALIDATION: No Authorization header found for %s", r.URL.Path)
-			http.Error(w, "Authorization header required", http.StatusUnauthorized)
-			return
-		}
-
-		// Extract token from Bearer scheme
-		tokenParts := strings.Split(authHeader, " ")
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			log.Printf("JWT VALIDATION: Invalid authorization format for %s", r.URL.Path)
-			http.Error(w, "Invalid authorization format", http.StatusUnauthorized)
-			return
+			// Extract token from Bearer scheme
+			tokenParts := strings.Split(authHeader, " ")
+			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+				log.Printf("JWT VALIDATION: Invalid authorization format for %s", r.URL.Path)
+				http.Error(w, "Invalid authorization format", http.StatusUnauthorized)
+				return
+			}
+			
+			tokenString = tokenParts[1]
 		}
 
 		// Validate token using the auth package
 		validateStart := time.Now()
-		claims, err := auth.ValidateToken(tokenParts[1])
+		claims, err := auth.ValidateToken(tokenString)
 		validationTime := time.Since(validateStart)
 		log.Printf("JWT VALIDATION TIMING: Token validation took %v for %s", validationTime, r.URL.Path)
 		

@@ -34,7 +34,7 @@ export default function MenuManagement() {
     fetchMenuItems,
   } = useMenu();
 
-  const { token, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -49,11 +49,10 @@ export default function MenuManagement() {
     active: true,
   });
 
-  // Update your useEffect to wait for authentication:
   useEffect(() => {
     const loadData = async () => {
       // Only attempt to load if authentication is confirmed
-      if (isAuthenticated && token) {
+      if (isAuthenticated) {
         try {
           setError(null);
           const success = await fetchMenuItems();
@@ -91,13 +90,7 @@ export default function MenuManagement() {
     if (!initialLoadAttempted || retryCount > 0) {
       loadData();
     }
-  }, [
-    isAuthenticated,
-    token,
-    fetchMenuItems,
-    retryCount,
-    initialLoadAttempted,
-  ]);
+  }, [isAuthenticated, fetchMenuItems, retryCount, initialLoadAttempted]);
 
   // Automatically generate value from label
   useEffect(() => {

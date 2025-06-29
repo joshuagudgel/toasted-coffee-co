@@ -33,9 +33,7 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
         const response = await fetch(
           `${API_URL}/api/v1/bookings?include_archived=${includeArchived}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            credentials: "include",
           }
         );
 

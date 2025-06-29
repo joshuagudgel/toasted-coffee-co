@@ -95,29 +95,43 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log.Printf("LOGIN TIMING: Refresh token generation took %v", time.Since(refreshTokenStart))
 	log.Printf("Refresh token generated successfully")
 
-	// Return token and user info
-	user.Password = "" // Don't send password back
+	// Set secure HttpOnly cookies instead of returning tokens in response body
+	// Access token cookie - shorter expiration
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   r.TLS != nil, // true in production with HTTPS
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400, // 24 hours
+	})
 
-	responseStart := time.Now()
+	// Refresh token cookie - longer expiration
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/api/v1/auth/refresh", // Restrict to refresh endpoint only
+		HttpOnly: true,
+		Secure:   r.TLS != nil, // true in production with HTTPS
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   259200, // 3 days
+	})
+
+	// Return user info only (without tokens)
 	w.Header().Set("Content-Type", "application/json")
-	resp := LoginResponse{
-		Token:        token,
-		RefreshToken: refreshToken,
-		User:         *user,
+	resp := struct {
+		User models.User `json:"user"`
+	}{
+		User: *user,
 	}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Printf("ERROR: Failed to encode login response: %v", err)
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		log.Printf("ERROR: Failed to encode response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("LOGIN TIMING: Response encoding took %v", time.Since(responseStart))
 
-	totalTime := time.Since(startTime)
-	log.Printf("LOGIN COMPLETE: Total authentication time: %v", totalTime)
-	if totalTime > 1*time.Second {
-		log.Printf("LOGIN PERFORMANCE WARNING: Authentication took more than 1 second (%v)", totalTime)
-	}
-
+	log.Printf("LOGIN COMPLETE: Total authentication time: %v", time.Since(startTime))
 	log.Printf("Login successful for user: %s, role: %s", user.Username, user.Role)
 }
 
@@ -137,15 +151,24 @@ func (h *AuthHandler) ValidateToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	var req RefreshRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	// Get refresh token from cookie instead of request body
+	refreshCookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		http.Error(w, "Refresh token not found", http.StatusUnauthorized)
 		return
 	}
 
 	// Validate refresh token
-	userID, err := auth.ValidateRefreshToken(req.RefreshToken)
+	userID, err := auth.ValidateRefreshToken(refreshCookie.Value)
 	if err != nil {
+		// Clear the invalid cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    "",
+			Path:     "/api/v1/auth/refresh",
+			HttpOnly: true,
+			MaxAge:   -1, // Delete the cookie
+		})
 		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
 		return
 	}
@@ -164,8 +187,45 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set new access token cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    newAccessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   r.TLS != nil,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400, // 24 hours
+	})
+
+	// Return success response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(RefreshResponse{
-		AccessToken: newAccessToken,
+	json.NewEncoder(w).Encode(map[string]bool{
+		"success": true,
+	})
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	// Clear access token cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1, // Delete the cookie
+	})
+
+	// Clear refresh token cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/api/v1/auth/refresh",
+		HttpOnly: true,
+		MaxAge:   -1, // Delete the cookie
+	})
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{
+		"success": true,
 	})
 }

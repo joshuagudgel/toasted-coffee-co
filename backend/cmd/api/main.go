@@ -191,14 +191,12 @@ func main() {
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public routes with rate limiting
-
-		// Auth endpoints - limit to 20 requests per minute
-		// This prevents brute force attacks while allowing legitimate login attempts
+		// Auth endpoints
 		r.Group(func(r chi.Router) {
 			r.Use(httprate.LimitByIP(20, 1*time.Minute))
 			r.Post("/auth/login", authHandler.Login)
 			r.Post("/auth/refresh", authHandler.RefreshToken)
+			r.Post("/auth/logout", authHandler.Logout)
 		})
 
 		// Booking creation - limit to 10 requests per minute

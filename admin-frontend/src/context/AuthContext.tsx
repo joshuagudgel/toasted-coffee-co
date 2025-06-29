@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  token: string | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
@@ -17,26 +16,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<{ id: number; role: string } | undefined>();
-  const [token, setToken] = useState<string | null>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
   useEffect(() => {
-    // Check for existing auth token in localStorage
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      setToken(token);
-      // Validate token on mount (optional)
-      validateToken(token);
-    } else {
-      setIsLoading(false);
-    }
+    // Check if user is authenticated by validating credentials with backend
+    validateToken();
   }, []);
 
-  const validateToken = async (token: string) => {
+  const validateToken = async () => {
     try {
-      // Call your backend endpoint to validate token
+      // With cookies, we just need to call the endpoint
+      // The cookie will be sent automatically
       const response = await fetch(`${API_URL}/api/v1/auth/validate`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include", // Important: include cookies in request
       });
 
       if (response.ok) {
@@ -44,16 +36,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser({ id: userData.userId, role: userData.role });
         setIsAuthenticated(true);
       } else {
-        // Token invalid, clear it
-        localStorage.removeItem("authToken");
-        setToken(null);
         setIsAuthenticated(false);
+        setUser(undefined);
       }
     } catch (error) {
       console.error("Token validation error:", error);
-      localStorage.removeItem("authToken");
-      setToken(null);
       setIsAuthenticated(false);
+      setUser(undefined);
     } finally {
       setIsLoading(false);
     }
@@ -68,15 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
+        credentials: "include",
       });
 
       if (!response.ok) {
         return false;
       }
 
-      const { token, user: userData } = await response.json();
-      localStorage.setItem("authToken", token);
-      setToken(token);
+      const { user: userData } = await response.json();
       setUser({ id: userData.id, role: userData.role });
       setIsAuthenticated(true);
       return true;
@@ -86,18 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("authToken");
-    setToken(null);
-    setUser(undefined);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear cookies on server
+      await fetch(`${API_URL}/api/v1/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Always clear local state regardless of server response
+      setUser(undefined);
+      setIsAuthenticated(false);
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated,
-        token,
         login,
         logout,
         isLoading,
