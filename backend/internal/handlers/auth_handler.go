@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/auth"
@@ -95,15 +96,22 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log.Printf("LOGIN TIMING: Refresh token generation took %v", time.Since(refreshTokenStart))
 	log.Printf("Refresh token generated successfully")
 
-	// Set secure HttpOnly cookies instead of returning tokens in response body
-	// Access token cookie - shorter expiration
+	// Determine SameSite policy based on environment
+	var sameSiteMode http.SameSite
+	if os.Getenv("ENVIRONMENT") == "production" {
+		sameSiteMode = http.SameSiteNoneMode // For cross-site requests in production
+	} else {
+		sameSiteMode = http.SameSiteStrictMode // Stricter for development
+	}
+
+	// Set secure HttpOnly cookies
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   r.TLS != nil, // true in production with HTTPS
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true,
+		SameSite: sameSiteMode,
 		MaxAge:   86400, // 24 hours
 	})
 
@@ -111,10 +119,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
-		Path:     "/api/v1/auth/refresh", // Restrict to refresh endpoint only
+		Path:     "/api/v1/auth/refresh",
 		HttpOnly: true,
-		Secure:   r.TLS != nil, // true in production with HTTPS
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true,
+		SameSite: sameSiteMode,
 		MaxAge:   259200, // 3 days
 	})
 
