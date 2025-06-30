@@ -123,6 +123,30 @@ func main() {
 		log.Printf("Warning: Could not read migration file: %v", err)
 	}
 
+	migrationSQL7, err := os.ReadFile("internal/database/migrations/07_create_packages_table.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL7))
+		if err != nil {
+			log.Printf("Warning: Migration 7 error: %v", err)
+		} else {
+			log.Println("Migration 7 executed successfully")
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
+	migrationSQL8, err := os.ReadFile("internal/database/migrations/08_add_package_display_order.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL8))
+		if err != nil {
+			log.Printf("Warning: Migration 8 error: %v", err)
+		} else {
+			log.Println("Migration 8 executed successfully")
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
 	log.Println("Setting up admin user...")
 	var count int
 	err = db.Pool.QueryRow(context.Background(), `
@@ -169,6 +193,7 @@ func main() {
 	bookingRepo := database.NewBookingRepository(db)
 	userRepo := database.NewUserRepository(db)
 	menuRepo := database.NewMenuRepository(db)
+	packageRepo := database.NewPackageRepository(db)
 
 	// First, create the email service as a shared resource
 	emailService := services.NewEmailService()
@@ -177,8 +202,7 @@ func main() {
 	bookingHandler := handlers.NewBookingHandler(bookingRepo, emailService)
 	authHandler := handlers.NewAuthHandler(userRepo)
 	menuHandler := handlers.NewMenuHandler(menuRepo)
-
-	// Create the contact handler with the email service
+	packageHandler := handlers.NewPackageHandler(packageRepo)
 	contactHandler := handlers.NewContactHandler(emailService)
 
 	// Initialize router
@@ -213,6 +237,7 @@ func main() {
 			r.Use(httprate.LimitByIP(30, 1*time.Minute))
 			r.Get("/menu", menuHandler.GetAll)
 			r.Get("/menu/{type}", menuHandler.GetByType)
+			r.Get("/packages", packageHandler.GetAll)
 		})
 
 		// Protected routes - admin functions with JWT auth
@@ -235,6 +260,12 @@ func main() {
 			r.Post("/menu", menuHandler.Create)
 			r.Put("/menu/{id}", menuHandler.Update)
 			r.Delete("/menu/{id}", menuHandler.Delete)
+
+			// Package management
+			r.Post("/packages", packageHandler.Create)
+			r.Get("/packages/{id}", packageHandler.GetByID)
+			r.Put("/packages/{id}", packageHandler.Update)
+			r.Delete("/packages/{id}", packageHandler.Delete)
 
 			// Auth validation
 			r.Get("/auth/validate", authHandler.ValidateToken)

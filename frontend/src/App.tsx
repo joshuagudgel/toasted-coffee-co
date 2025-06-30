@@ -8,6 +8,7 @@ import BookingModal from "./components/ui/BookingModal";
 import { BookingProvider, useBooking } from "./context/BookingContext";
 import { MenuProvider } from "./context/MenuContext";
 import { InquiryProvider } from "./context/InquiryContext";
+import { PackageProvider } from "./context/PackageContext";
 
 const AppContent = () => {
   const { isModalOpen, selectedPackage, closeModal } = useBooking();
@@ -34,7 +35,9 @@ function App() {
     <MenuProvider>
       <BookingProvider>
         <InquiryProvider>
-          <AppContent />
+          <PackageProvider>
+            <AppContent />
+          </PackageProvider>
         </InquiryProvider>
       </BookingProvider>
     </MenuProvider>

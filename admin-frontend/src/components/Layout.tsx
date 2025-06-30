@@ -18,7 +18,8 @@ export default function Layout() {
             <Link
               to="/"
               className={`px-3 py-2 rounded transition ${
-                location.pathname === "/" || location.pathname.startsWith("/booking/")
+                location.pathname === "/" ||
+                location.pathname.startsWith("/booking/")
                   ? "bg-mocha text-parchment"
                   : "hover:text-latte"
               }`}
@@ -34,6 +35,16 @@ export default function Layout() {
               }`}
             >
               Menu
+            </Link>
+            <Link
+              to="/packages"
+              className={`px-3 py-2 rounded transition ${
+                location.pathname === "/packages"
+                  ? "bg-mocha text-parchment"
+                  : "hover:text-latte"
+              }`}
+            >
+              Packages
             </Link>
             <button
               onClick={handleLogout}

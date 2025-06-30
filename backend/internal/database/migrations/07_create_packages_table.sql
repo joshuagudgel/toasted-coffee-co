@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS packages (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price VARCHAR(50) NOT NULL,
+    description TEXT NOT NULL,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS package_points (
+    id SERIAL PRIMARY KEY,
+    package_id INTEGER REFERENCES packages(id) ON DELETE CASCADE,
+    point TEXT NOT NULL,
+    display_order INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
