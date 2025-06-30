@@ -204,15 +204,20 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
-
+	var sameSiteMode http.SameSite
+	if os.Getenv("ENVIRONMENT") == "production" {
+		sameSiteMode = http.SameSiteNoneMode
+	} else {
+		sameSiteMode = http.SameSiteStrictMode
+	}
 	// Set new access token cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    newAccessToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true, // Always true for production
+		SameSite: sameSiteMode,
 		MaxAge:   86400, // 24 hours
 	})
 
