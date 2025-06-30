@@ -23,10 +23,9 @@ export default function SignIn() {
     try {
       const success = await login(username, password);
       if (success) {
-        // Add a slight delay to ensure state updates
         setTimeout(() => {
           navigate(from, { replace: true });
-        }, 1000);
+        }, 300);
       } else {
         setError("Invalid username or password");
       }
