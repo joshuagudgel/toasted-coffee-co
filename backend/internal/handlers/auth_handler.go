@@ -119,7 +119,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
-		Path:     "/api/v1/auth/refresh",
+		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: sameSiteMode,
@@ -214,12 +214,21 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	var sameSiteMode http.SameSite
+	if os.Getenv("ENVIRONMENT") == "production" {
+		sameSiteMode = http.SameSiteNoneMode
+	} else {
+		sameSiteMode = http.SameSiteStrictMode
+	}
+
 	// Clear access token cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: sameSiteMode,
 		MaxAge:   -1, // Delete the cookie
 	})
 
@@ -227,8 +236,10 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
-		Path:     "/api/v1/auth/refresh",
+		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: sameSiteMode,
 		MaxAge:   -1, // Delete the cookie
 	})
 
