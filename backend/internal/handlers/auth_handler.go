@@ -169,12 +169,22 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// Validate refresh token
 	userID, err := auth.ValidateRefreshToken(refreshCookie.Value)
 	if err != nil {
-		// Clear the invalid cookie
+		// Determine SameSite policy based on environment (add this)
+		var sameSiteMode http.SameSite
+		if os.Getenv("ENVIRONMENT") == "production" {
+			sameSiteMode = http.SameSiteNoneMode
+		} else {
+			sameSiteMode = http.SameSiteStrictMode
+		}
+
+		// Clear the invalid cookie with correct path and settings
 		http.SetCookie(w, &http.Cookie{
 			Name:     "refresh_token",
 			Value:    "",
-			Path:     "/api/v1/auth/refresh",
+			Path:     "/",
 			HttpOnly: true,
+			Secure:   true,
+			SameSite: sameSiteMode,
 			MaxAge:   -1, // Delete the cookie
 		})
 		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
