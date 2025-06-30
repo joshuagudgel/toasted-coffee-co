@@ -67,9 +67,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const { user: userData } = await response.json();
       setUser({ id: userData.id, role: userData.role });
       setIsAuthenticated(true);
+
+      // Use a setTimeout to ensure state updates before redirect
+      setTimeout(() => {
+        // Force a validation check after login
+        checkAuth();
+      }, 100);
+
       return true;
     } catch (error) {
       console.error("Login error:", error);
+      return false;
+    }
+  };
+
+  // Add this function to explicitly check auth status
+  const checkAuth = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/auth/validate`, {
+        credentials: "include",
+      });
+
+      const isValid = response.ok;
+      console.log("Auth validation result:", isValid);
+      setIsAuthenticated(isValid);
+
+      // If validation fails, clear any user data
+      if (!isValid) {
+        setUser(undefined);
+      }
+
+      return isValid;
+    } catch (error) {
+      console.error("Auth validation error:", error);
+      setIsAuthenticated(false);
+      setUser(undefined);
       return false;
     }
   };
