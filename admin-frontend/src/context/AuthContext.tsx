@@ -53,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     password: string
   ): Promise<boolean> => {
     try {
+      console.log("Login attempt for:", username);
       const response = await fetch(`${API_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         credentials: "include",
       });
 
+      console.log("Login response status:", response.status);
+
       if (!response.ok) {
+        console.error("Login failed with status:", response.status);
         return false;
       }
 
