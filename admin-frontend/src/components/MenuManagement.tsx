@@ -149,7 +149,7 @@ export default function MenuManagement() {
 
     if (!isAuthenticated) {
       alert("Your session has expired. Please log in again.");
-      navigate("/login");
+      navigate("/signin");
       return;
     }
 
@@ -167,7 +167,7 @@ export default function MenuManagement() {
       // Handle auth errors specially
       if (err instanceof Error && err.message.includes("Not authenticated")) {
         alert("Your session has expired. Please log in again.");
-        navigate("/login");
+        navigate("/signin");
       } else {
         alert(err instanceof Error ? err.message : "An error occurred");
       }
@@ -181,7 +181,7 @@ export default function MenuManagement() {
 
     if (!isAuthenticated) {
       alert("Your session has expired. Please log in again.");
-      navigate("/login");
+      navigate("/signin");
       return;
     }
 
@@ -192,7 +192,7 @@ export default function MenuManagement() {
       // Handle auth errors specially
       if (err instanceof Error && err.message.includes("Not authenticated")) {
         alert("Your session has expired. Please log in again.");
-        navigate("/login");
+        navigate("/signin");
       } else {
         alert(err instanceof Error ? err.message : "An error occurred");
       }

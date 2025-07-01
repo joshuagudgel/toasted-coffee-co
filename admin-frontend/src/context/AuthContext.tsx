@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -6,6 +13,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   user?: { id: number; role: string };
+  validateToken: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,37 +24,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<{ id: number; role: string } | undefined>();
+  const [isValidating, setIsValidating] = useState(false);
+  const validationTimeRef = useRef<number | null>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
   useEffect(() => {
-    // Check if user is authenticated by validating credentials with backend
-    validateToken();
+    const initialize = async () => {
+      const apiAvailable = await checkApiConnection();
+      if (!apiAvailable) {
+        console.error("Cannot reach API server");
+        setIsLoading(false);
+        return;
+      }
+
+      validateToken();
+    };
+
+    initialize();
   }, []);
 
-  const validateToken = async () => {
+  useEffect(() => {
+    console.log("Auth state change:", { isAuthenticated, isLoading });
+  }, [isAuthenticated, isLoading]);
+
+  const validateToken = useCallback(async () => {
+    // Skip if already validating or validated recently
+    if (isValidating) {
+      console.log("Validation already in progress, skipping");
+      return;
+    }
+
+    // Throttle validation calls
+    const now = Date.now();
+    if (validationTimeRef.current && now - validationTimeRef.current < 2000) {
+      console.log("Validated recently, skipping");
+      return;
+    }
+
     try {
-      // With cookies, we just need to call the endpoint
-      // The cookie will be sent automatically
+      setIsValidating(true);
+      console.log("Actually validating token at:", new Date().toISOString());
       const response = await fetch(`${API_URL}/api/v1/auth/validate`, {
-        credentials: "include", // Important: include cookies in request
+        credentials: "include",
       });
 
+      console.log("Validation response:", response.status);
+
+      validationTimeRef.current = Date.now();
+
       if (response.ok) {
+        // Handle successful validation
         const userData = await response.json();
         setUser({ id: userData.userId, role: userData.role });
         setIsAuthenticated(true);
       } else {
+        // Handle failed validation
         setIsAuthenticated(false);
         setUser(undefined);
       }
     } catch (error) {
-      console.error("Token validation error:", error);
-      setIsAuthenticated(false);
-      setUser(undefined);
+      // Error handling...
     } finally {
       setIsLoading(false);
+      setIsValidating(false);
+      validationTimeRef.current = Date.now();
     }
-  };
+  }, [API_URL, isValidating]);
 
   const login = async (
     username: string,
@@ -94,6 +137,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const checkApiConnection = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(`${API_URL}/api/v1/health`, {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      console.log("API connection check:", response.status);
+
+      return response.ok;
+    } catch (error) {
+      console.error("API connection error:", error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -102,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         logout,
         isLoading,
         user,
+        validateToken,
       }}
     >
       {children}

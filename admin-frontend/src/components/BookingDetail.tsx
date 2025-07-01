@@ -143,13 +143,6 @@ export default function BookingDetail() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("Not authenticated");
-        setIsSaving(false);
-        return;
-      }
-
       const response = await fetch(`${API_URL}/api/v1/bookings/${id}`, {
         method: "PUT",
         headers: {
@@ -195,16 +188,9 @@ export default function BookingDetail() {
 
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("Not authenticated");
-        setIsDeleting(false);
-        return;
-      }
-
       const response = await fetch(`${API_URL}/api/v1/bookings/${id}`, {
         method: "DELETE",
-        credentials: "include",
+        credentials: "include", // Already correct
       });
 
       if (response.status === 401) {
@@ -242,13 +228,6 @@ export default function BookingDetail() {
 
     setIsArchiving(true);
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        alert("Not authenticated");
-        setIsArchiving(false);
-        return;
-      }
-
       const endpoint = booking?.archived
         ? `${API_URL}/api/v1/bookings/${id}/unarchive`
         : `${API_URL}/api/v1/bookings/${id}/archive`;

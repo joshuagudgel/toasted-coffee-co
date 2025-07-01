@@ -1,16 +1,21 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { JSX } from 'react';
-
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { JSX, memo } from "react";
 
 interface ProtectedRouteProps {
   children: JSX.Element;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  
+
+  console.log("ProtectedRoute render:", {
+    isAuthenticated,
+    isLoading,
+    path: location.pathname,
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-parchment">
@@ -18,11 +23,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       </div>
     );
   }
-  
+
   if (!isAuthenticated) {
     // Redirect to login page, but save the current location
+    console.log("Not authenticated, redirecting to login");
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
-  
+  console.log("Authenticated, rendering protected content");
   return children;
 }
+
+export default memo(ProtectedRoute);

@@ -24,12 +24,18 @@ export default function SignIn() {
       console.log("Submitting login form...");
       const success = await login(username, password);
       console.log("Login result:", success);
+
       if (success) {
         console.log("Login successful, will navigate to:", from);
-        setTimeout(() => {
-          console.log("Navigating now...");
-          navigate(from, { replace: true });
-        }, 1000);
+        // Check if we're already at the destination to prevent loops
+        if (location.pathname !== from) {
+          setTimeout(() => {
+            console.log("Navigating now...");
+            navigate(from, { replace: true });
+          }, 1000);
+        } else {
+          console.log("Already at destination, not navigating");
+        }
       } else {
         setError("Invalid username or password");
       }

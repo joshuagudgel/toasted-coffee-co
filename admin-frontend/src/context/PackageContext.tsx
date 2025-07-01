@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useCallback } from "react";
 
-// Update the Package interface
 export interface Package {
   id: number;
   name: string;
@@ -13,7 +12,6 @@ export interface Package {
   updatedAt: string;
 }
 
-// Update the PackageInput interface
 export interface PackageInput {
   name: string;
   price: string;
@@ -126,7 +124,6 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Remove this unnecessary localStorage check from deletePackage
   const deletePackage = async (id: number) => {
     try {
       const response = await fetch(`${API_URL}/api/v1/packages/${id}`, {

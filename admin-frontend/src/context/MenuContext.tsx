@@ -13,7 +13,7 @@ interface MenuContextType {
   milkItems: MenuItem[];
   loading: boolean;
   error: string | null;
-  fetchMenuItems: () => Promise<boolean>; // Return success status
+  fetchMenuItems: () => Promise<boolean>;
   addMenuItem: (item: Omit<MenuItem, "id">) => Promise<void>;
   updateMenuItem: (id: number, item: Partial<MenuItem>) => Promise<void>;
   deleteMenuItem: (id: number) => Promise<void>;
@@ -26,7 +26,7 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [coffeeItems, setCoffeeItems] = useState<MenuItem[]>([]);
   const [milkItems, setMilkItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(false); // Start with false
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -37,26 +37,13 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
 
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        console.log("No token found in localStorage");
-        setError("Not authenticated");
-        return false;
-      }
-
-      console.log("Token found, making request");
+      // CHANGE: Remove token check and just use credentials: "include"
       const response = await fetch(`${API_URL}/api/v1/menu`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include", // Use HttpOnly cookies
       });
 
       if (response.status === 401) {
         console.log("401 Unauthorized response");
-        // Try to refresh token here if you have refresh functionality
-        // const refreshed = await refreshToken();
-        // if (refreshed) return await fetchMenuItems();
-
         setError("Your session has expired. Please log in again.");
         return false;
       }
@@ -81,20 +68,15 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [API_URL]);
 
-  // Other methods remain similar but should return success/failure status
+  // CHANGE: Update all other methods to use credentials instead of token
   const addMenuItem = async (item: Omit<MenuItem, "id">) => {
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
       const response = await fetch(`${API_URL}/api/v1/menu`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include", // Use HttpOnly cookies
         body: JSON.stringify(item),
       });
 
@@ -111,11 +93,6 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateMenuItem = async (id: number, item: Partial<MenuItem>) => {
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
       // Get current item first to maintain type and other fields
       const currentItem = [...coffeeItems, ...milkItems].find(
         (i) => i.id === id
@@ -130,8 +107,8 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include", // Use HttpOnly cookies
         body: JSON.stringify(updatedItem),
       });
 
@@ -148,16 +125,9 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const deleteMenuItem = async (id: number) => {
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
       const response = await fetch(`${API_URL}/api/v1/menu/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include", // Use HttpOnly cookies
       });
 
       if (!response.ok) {
@@ -170,9 +140,6 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
       throw err;
     }
   };
-
-  // Remove the automatic fetchMenuItems call on mount
-  // This will be controlled by the component instead
 
   return (
     <MenuContext.Provider
