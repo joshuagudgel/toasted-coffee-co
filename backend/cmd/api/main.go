@@ -276,6 +276,7 @@ func main() {
 	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
+		log.Println("Health check endpoint hit")
 	})
 
 	// DB check with minimal rate limiting
