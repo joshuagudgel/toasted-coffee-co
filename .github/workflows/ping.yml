@@ -8,4 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Curl Render Service
-        run: curl -s https://your-render-url.onrender.com/health
+        run: curl -s https://toasted-coffee-admin.onrender.com/health
