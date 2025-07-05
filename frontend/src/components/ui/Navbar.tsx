@@ -64,27 +64,27 @@ const Navbar: React.FC = () => {
           <div className="container mx-auto flex flex-col space-y-3 px-6">
             <a
               href="#"
-              className="font-medium text-mocha hover:text-latte transition"
+              className="text-center ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
               onClick={() => scrollToSection("packages")}
             >
               Packages
             </a>
             <a
               href="#"
-              className="font-medium text-mocha hover:text-latte transition"
+              className="text-center ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
               onClick={() => scrollToSection("menu")}
             >
               Menu
             </a>
             <a
               href="#"
-              className="font-medium text-mocha hover:text-latte transition"
+              className="text-center ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
               onClick={() => scrollToSection("contact")}
             >
               Contact
             </a>
             <button
-              className="font-medium text-mocha hover:text-latte transition"
+              className="text-center ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
               onClick={() => {
                 openInquiryModal();
               }}
@@ -92,7 +92,7 @@ const Navbar: React.FC = () => {
               Inquire
             </button>
             <button
-              className="ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
+              className="text-center ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
               onClick={() => {
                 setIsMenuOpen(false);
                 openModal();
