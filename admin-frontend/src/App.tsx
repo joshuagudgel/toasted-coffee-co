@@ -1,58 +1,19 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./components/Layout";
-import BookingList from "./components/BookingList";
-import BookingDetail from "./components/BookingDetail";
-import MenuManagement from "./components/MenuManagement";
-import PackageManagement from "./components/PackageManagement";
-import SignIn from "./components/SignIn";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { MenuProvider } from "./context/MenuContext";
 import { PackageProvider } from "./context/PackageContext";
+import AppRoutes from "./AppRoutes";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <MenuProvider>
           <PackageProvider>
-            <Routes>
-              {/* Public Route for SignIn page */}
-              <Route path="/signin" element={<SignIn />} />
-
-              {/* Protected Route for the rest of the app */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route
-                  index
-                  element={
-                    <BookingList
-                      hiddenColumns={[
-                        "id",
-                        "notes",
-                        "createdAt",
-                        "contact",
-                        "time",
-                        "people",
-                        "package",
-                      ]}
-                    />
-                  }
-                />
-                <Route path="booking/:id" element={<BookingDetail />} />
-                <Route path="menu" element={<MenuManagement />} />
-                <Route path="packages" element={<PackageManagement />} />
-              </Route>
-            </Routes>
+            <AppRoutes />
           </PackageProvider>
         </MenuProvider>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

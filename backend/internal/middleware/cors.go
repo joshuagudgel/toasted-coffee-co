@@ -9,6 +9,11 @@ import (
 func CORS(allowOrigins string) func(next http.Handler) http.Handler {
 	origins := strings.Split(allowOrigins, ",")
 
+	// Trim whitespace from each origin
+	for i, origin := range origins {
+		origins[i] = strings.TrimSpace(origin)
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
@@ -16,13 +21,13 @@ func CORS(allowOrigins string) func(next http.Handler) http.Handler {
 			// Check if the request origin is in our allowed list
 			allowOrigin := ""
 			for _, allowed := range origins {
-				if origin == strings.TrimSpace(allowed) {
-					allowOrigin = origin
+				if origin == allowed {
+					allowOrigin = origin // Use the exact origin
 					break
 				}
 			}
 
-			// set header only if origin is allowed
+			// Set headers only if origin is allowed
 			if allowOrigin != "" {
 				w.Header().Set("Access-Control-Allow-Origin", allowOrigin)
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")

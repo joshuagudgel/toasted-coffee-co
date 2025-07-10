@@ -1,0 +1,11 @@
+# .github/workflows/ping.yml
+name: Keep Render Awake
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl Render Service
+        run: curl -s https://toasted-coffee-api.onrender.com/health

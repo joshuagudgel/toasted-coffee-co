@@ -1,9 +1,14 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
 export default function Layout() {
   const { logout } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    console.log("Route changed to:", location.pathname);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();

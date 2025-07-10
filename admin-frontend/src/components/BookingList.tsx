@@ -18,18 +18,12 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("BookingList rendering");
     async function fetchBookings() {
       setLoading(true);
       setError(null);
 
       try {
-        // Get JWT token from localStorage
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-          navigate("/signin");
-          return;
-        }
-
         const response = await fetch(
           `${API_URL}/api/v1/bookings?include_archived=${includeArchived}`,
           {
@@ -38,8 +32,7 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
         );
 
         if (response.status === 401) {
-          localStorage.removeItem("authToken");
-          navigate("/signin");
+          setError("Your session has expired");
           return;
         }
 
