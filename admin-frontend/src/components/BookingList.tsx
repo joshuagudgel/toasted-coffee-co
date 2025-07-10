@@ -13,48 +13,40 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [includeArchived, setIncludeArchived] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
-  const { isAuthenticated, token } = useAuth();
+  const { apiRequest, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     console.log("BookingList rendering");
+
     async function fetchBookings() {
       setLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(
-          `${API_URL}/api/v1/bookings?include_archived=${includeArchived}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        const data = await apiRequest<Booking[]>(
+          `/api/v1/bookings?include_archived=${includeArchived}`
         );
-
-        if (response.status === 401) {
-          setError("Your session has expired");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch bookings: ${response.status}`);
-        }
-
-        const data = await response.json();
         setBookings(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        if (
+          err instanceof Error &&
+          (err.message === "Not authenticated" ||
+            err.message === "Session expired")
+        ) {
+          setError("Your session has expired");
+        } else {
+          setError(err instanceof Error ? err.message : "Unknown error");
+        }
       } finally {
         setLoading(false);
       }
     }
 
-    if (isAuthenticated && token) {
+    if (isAuthenticated) {
       fetchBookings();
     }
-  }, [isAuthenticated, token, navigate, includeArchived]);
+  }, [isAuthenticated, includeArchived, apiRequest]);
 
   const toggleArchivedView = () => {
     setIncludeArchived((prev) => !prev);

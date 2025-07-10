@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Booking } from "../types/booking";
+import { useAuth } from "../context/AuthContext";
 import { useMenu } from "../context/MenuContext";
 
 export default function BookingDetail() {
@@ -13,7 +14,7 @@ export default function BookingDetail() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const { apiRequest } = useAuth(); // Use apiRequest from AuthContext
   const navigate = useNavigate();
 
   // Get menu options from context
@@ -33,32 +34,29 @@ export default function BookingDetail() {
   // Fetch booking details
   useEffect(() => {
     async function fetchBookingDetails() {
+      setLoading(true);
       try {
-        const response = await fetch(`${API_URL}/api/v1/bookings/${id}`, {
-          credentials: "include",
-        });
-
-        if (response.status === 401) {
-          setError("Unauthorized. Please sign in again.");
-          setLoading(false);
-          return;
-        }
-        if (!response.ok) {
-          throw new Error(`Failed to fetch booking: ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await apiRequest<Booking>(`/api/v1/bookings/${id}`);
         setBooking(data);
         // Initialize editedBooking with the same data
         setEditedBooking(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        if (
+          err instanceof Error &&
+          (err.message === "Not authenticated" ||
+            err.message === "Session expired")
+        ) {
+          setError("Your session has expired. Please sign in again.");
+        } else {
+          setError(err instanceof Error ? err.message : "Unknown error");
+        }
       } finally {
         setLoading(false);
       }
     }
 
     fetchBookingDetails();
-  }, [id, API_URL]);
+  }, [id, apiRequest]);
 
   // Handle form input changes
   const handleChange = (
@@ -143,31 +141,15 @@ export default function BookingDetail() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/bookings/${id}`, {
+      // Use apiRequest instead of fetch
+      await apiRequest(`/api/v1/bookings/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
         body: JSON.stringify(editedBooking),
       });
-
-      if (response.status === 401) {
-        alert("Unauthorized. Please sign in again.");
-        setIsSaving(false);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to update booking: ${response.status}`);
-      }
 
       // Update booking state with edited values
       setBooking(editedBooking);
       setIsEditing(false);
-
-      // TODO: Success message
-      // Use a non-blocking notification instead of alert if possible
       alert("Booking updated successfully");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error updating booking");
@@ -176,7 +158,7 @@ export default function BookingDetail() {
     }
   };
 
-  // Delete booking function (existing implementation)
+  // Delete booking function
   const handleDelete = async () => {
     if (
       !window.confirm(
@@ -188,23 +170,11 @@ export default function BookingDetail() {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/bookings/${id}`, {
+      // Use apiRequest instead of fetch
+      await apiRequest(`/api/v1/bookings/${id}`, {
         method: "DELETE",
-        credentials: "include", // Already correct
       });
 
-      if (response.status === 401) {
-        alert("Unauthorized. Please sign in again.");
-        setIsDeleting(false);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete booking: ${response.status}`);
-      }
-
-      // TODO: Success message
-      // Use a non-blocking notification instead of alert if possible
       alert("Booking deleted successfully");
       navigate("/"); // Redirect to booking list
     } catch (err) {
@@ -229,40 +199,20 @@ export default function BookingDetail() {
     setIsArchiving(true);
     try {
       const endpoint = booking?.archived
-        ? `${API_URL}/api/v1/bookings/${id}/unarchive`
-        : `${API_URL}/api/v1/bookings/${id}/archive`;
+        ? `/api/v1/bookings/${id}/unarchive`
+        : `/api/v1/bookings/${id}/archive`;
 
-      const response = await fetch(endpoint, {
+      // Use apiRequest instead of fetch
+      await apiRequest(endpoint, {
         method: "POST",
-        credentials: "include",
       });
 
-      if (response.status === 401) {
-        alert("Unauthorized. Please sign in again.");
-        setIsArchiving(false);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to ${booking?.archived ? "unarchive" : "archive"} booking: ${
-            response.status
-          }`
-        );
-      }
-
-      // TODO: Success message
-      // Use a non-blocking notification instead of alert if possible
       alert(
         `Booking ${booking?.archived ? "unarchived" : "archived"} successfully`
       );
       navigate("/"); // Redirect to booking list
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : `Error ${booking?.archived ? "unarchiving" : "archiving"} booking`
-      );
+      alert(err instanceof Error ? err.message : "Error updating booking");
     } finally {
       setIsArchiving(false);
     }
