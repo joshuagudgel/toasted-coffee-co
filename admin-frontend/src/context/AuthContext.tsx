@@ -2,10 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface AuthContextType {
   isAuthenticated: boolean;
+  token: string | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
-  user?: { id: number; role: string };
+  user: { id: number; role: string } | undefined;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,19 +17,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<{ id: number; role: string } | undefined>();
+  const [token, setToken] = useState<string | null>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
   useEffect(() => {
-    // Check if user is authenticated by validating credentials with backend
-    validateToken();
+    // On mount, check if there's a token in localStorage
+    const storedToken = localStorage.getItem("access_token");
+    if (storedToken) {
+      setToken(storedToken);
+      validateToken(storedToken);
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const validateToken = async () => {
+  const validateToken = async (currentToken: string) => {
     try {
-      // With cookies, we just need to call the endpoint
-      // The cookie will be sent automatically
       const response = await fetch(`${API_URL}/api/v1/auth/validate`, {
-        credentials: "include", // Important: include cookies in request
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+        },
       });
 
       if (response.ok) {
@@ -36,11 +44,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser({ id: userData.userId, role: userData.role });
         setIsAuthenticated(true);
       } else {
+        // Clear invalid token
+        localStorage.removeItem("access_token");
+        setToken(null);
         setIsAuthenticated(false);
         setUser(undefined);
       }
     } catch (error) {
       console.error("Token validation error:", error);
+      localStorage.removeItem("access_token");
+      setToken(null);
       setIsAuthenticated(false);
       setUser(undefined);
     } finally {
@@ -57,14 +70,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials: "include",
       });
 
       if (!response.ok) {
         return false;
       }
 
-      const { user: userData } = await response.json();
+      const { token: accessToken, user: userData } = await response.json();
+
+      // Store token in state and localStorage
+      setToken(accessToken);
+      localStorage.setItem("access_token", accessToken);
+
       setUser({ id: userData.id, role: userData.role });
       setIsAuthenticated(true);
       return true;
@@ -76,15 +93,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async () => {
     try {
-      // Call logout endpoint to clear cookies on server
+      // Call logout endpoint (backend should invalidate token)
       await fetch(`${API_URL}/api/v1/auth/logout`, {
         method: "POST",
-        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // Always clear local state regardless of server response
+      // Clear local state and storage
+      localStorage.removeItem("access_token");
+      setToken(null);
       setUser(undefined);
       setIsAuthenticated(false);
     }
@@ -94,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     <AuthContext.Provider
       value={{
         isAuthenticated,
+        token,
         login,
         logout,
         isLoading,

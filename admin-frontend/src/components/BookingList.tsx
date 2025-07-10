@@ -14,7 +14,7 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
   const [error, setError] = useState<string | null>(null);
   const [includeArchived, setIncludeArchived] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,7 +27,9 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
         const response = await fetch(
           `${API_URL}/api/v1/bookings?include_archived=${includeArchived}`,
           {
-            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
 
@@ -49,10 +51,10 @@ export default function BookingList({ hiddenColumns = [] }: BookingListProps) {
       }
     }
 
-    if (isAuthenticated) {
+    if (isAuthenticated && token) {
       fetchBookings();
     }
-  }, [isAuthenticated, navigate, includeArchived]);
+  }, [isAuthenticated, token, navigate, includeArchived]);
 
   const toggleArchivedView = () => {
     setIncludeArchived((prev) => !prev);
