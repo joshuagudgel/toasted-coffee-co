@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePackages, Package, PackageInput } from "../context/PackageContext";
 import { useAuth } from "../context/AuthContext";
@@ -24,8 +24,11 @@ export default function PackageManagement() {
     deletePackage,
   } = usePackages();
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, apiRequest } = useAuth();
   const navigate = useNavigate();
+  
+  // Track if a fetch operation is in progress
+  const isFetchingRef = useRef(false);
 
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [editingItem, setEditingItem] = useState<Package | null>(null);
@@ -46,9 +49,13 @@ export default function PackageManagement() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Only attempt to load if authentication is confirmed
+      // Prevent concurrent fetch operations
+      if (isFetchingRef.current) return;
+      
+      // Only attempt to load if authenticated
       if (isAuthenticated) {
         try {
+          isFetchingRef.current = true;
           setError(null);
           const success = await fetchPackages(true); // Include inactive packages
 
@@ -60,10 +67,18 @@ export default function PackageManagement() {
           }
         } catch (err) {
           console.error("Failed to load packages:", err);
-          setError(
-            err instanceof Error ? err.message : "Failed to load packages"
-          );
+          // Handle auth errors
+          if (err instanceof Error && 
+              (err.message === "Not authenticated" || 
+               err.message === "Session expired")) {
+            setError("Your session has expired. Please sign in again.");
+          } else {
+            setError(
+              err instanceof Error ? err.message : "Failed to load packages"
+            );
+          }
         } finally {
+          isFetchingRef.current = false;
           setInitialLoadAttempted(true);
         }
       } else if (!isAuthenticated) {
@@ -182,8 +197,10 @@ export default function PackageManagement() {
       }
       resetForm();
     } catch (err) {
-      // Handle auth errors specially
-      if (err instanceof Error && err.message.includes("Not authenticated")) {
+      // Handle auth errors consistently
+      if (err instanceof Error && 
+          (err.message === "Not authenticated" || 
+           err.message === "Session expired")) {
         alert("Your session has expired. Please log in again.");
         navigate("/signin");
       } else {
@@ -207,8 +224,10 @@ export default function PackageManagement() {
       await deletePackage(id);
       alert("Package deleted successfully");
     } catch (err) {
-      // Handle auth errors specially
-      if (err instanceof Error && err.message.includes("Not authenticated")) {
+      // Handle auth errors consistently
+      if (err instanceof Error && 
+          (err.message === "Not authenticated" || 
+           err.message === "Session expired")) {
         alert("Your session has expired. Please log in again.");
         navigate("/signin");
       } else {

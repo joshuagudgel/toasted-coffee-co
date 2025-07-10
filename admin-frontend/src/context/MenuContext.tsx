@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useCallback } from "react";
+import { useAuth } from "./AuthContext";
 
 export interface MenuItem {
   id: number;
@@ -29,30 +30,17 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  // Use apiRequest from AuthContext
+  const { apiRequest } = useAuth();
 
-  // Add refreshToken functionality:
   const fetchMenuItems = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      // CHANGE: Remove token check and just use credentials: "include"
-      const response = await fetch(`${API_URL}/api/v1/menu`, {
-        credentials: "include", // Use HttpOnly cookies
-      });
+      // Use apiRequest instead of fetch
+      const data = await apiRequest<MenuItem[]>("/api/v1/menu");
 
-      if (response.status === 401) {
-        console.log("401 Unauthorized response");
-        setError("Your session has expired. Please log in again.");
-        return false;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch menu items: ${response.status}`);
-      }
-
-      const data: MenuItem[] = await response.json();
       console.log("Data received:", data.length, "items");
 
       // Separate items by type
@@ -66,23 +54,18 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, [apiRequest]);
 
-  // CHANGE: Update all other methods to use credentials instead of token
   const addMenuItem = async (item: Omit<MenuItem, "id">) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/menu`, {
+      // Use apiRequest instead of fetch
+      await apiRequest<MenuItem>("/api/v1/menu", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Use HttpOnly cookies
         body: JSON.stringify(item),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to add menu item: ${response.status}`);
-      }
 
       // Refresh menu items
       await fetchMenuItems();
@@ -103,18 +86,14 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const updatedItem = { ...currentItem, ...item };
 
-      const response = await fetch(`${API_URL}/api/v1/menu/${id}`, {
+      // Use apiRequest instead of fetch
+      await apiRequest<MenuItem>(`/api/v1/menu/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Use HttpOnly cookies
         body: JSON.stringify(updatedItem),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update menu item: ${response.status}`);
-      }
 
       // Refresh menu items
       await fetchMenuItems();
@@ -125,14 +104,10 @@ export const MenuProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const deleteMenuItem = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/menu/${id}`, {
+      // Use apiRequest instead of fetch
+      await apiRequest(`/api/v1/menu/${id}`, {
         method: "DELETE",
-        credentials: "include", // Use HttpOnly cookies
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete menu item: ${response.status}`);
-      }
 
       // Refresh menu items
       await fetchMenuItems();

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useCallback } from "react";
+import { useAuth } from "./AuthContext";
 
 export interface Package {
   id: number;
@@ -39,8 +40,9 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  
+  // Use the apiRequest function from AuthContext
+  const { apiRequest } = useAuth();
 
   const fetchPackages = useCallback(
     async (includeInactive = false): Promise<boolean> => {
@@ -49,23 +51,10 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         const queryParam = includeInactive ? "?include_inactive=true" : "";
-        const response = await fetch(
-          `${API_URL}/api/v1/packages${queryParam}`,
-          {
-            credentials: "include",
-          }
-        );
-
-        if (response.status === 401) {
-          setError("Not authenticated");
-          return false;
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch packages: ${response.status}`);
-        }
-
-        const data = await response.json();
+        
+        // Use apiRequest instead of fetch
+        const data = await apiRequest<Package[]>(`/api/v1/packages${queryParam}`);
+        
         setPackages(data);
         return true;
       } catch (err) {
@@ -76,24 +65,19 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     },
-    [API_URL]
+    [apiRequest]
   );
 
-  // Add Content-Type header to your API requests
   const addPackage = async (pkg: PackageInput) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/packages`, {
+      // Use apiRequest instead of fetch
+      await apiRequest<Package>("/api/v1/packages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
         body: JSON.stringify(pkg),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to add package: ${response.status}`);
-      }
 
       // Refresh packages
       await fetchPackages();
@@ -104,18 +88,14 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updatePackage = async (id: number, pkg: PackageInput) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/packages/${id}`, {
+      // Use apiRequest instead of fetch
+      await apiRequest<Package>(`/api/v1/packages/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
         body: JSON.stringify(pkg),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update package: ${response.status}`);
-      }
 
       // Refresh packages
       await fetchPackages();
@@ -126,14 +106,10 @@ export const PackageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const deletePackage = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/packages/${id}`, {
+      // Use apiRequest instead of fetch
+      await apiRequest(`/api/v1/packages/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete package: ${response.status}`);
-      }
 
       // Refresh packages
       await fetchPackages();

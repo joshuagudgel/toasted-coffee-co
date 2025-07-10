@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMenu, MenuItem } from "../context/MenuContext";
 import { MenuItemTable } from "./MenuItemTable";
 import { useNavigate } from "react-router-dom";
@@ -34,7 +34,7 @@ export default function MenuManagement() {
     fetchMenuItems,
   } = useMenu();
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, apiRequest } = useAuth();
   const navigate = useNavigate();
 
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -42,6 +42,10 @@ export default function MenuManagement() {
   const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
+  
+  // Track if a fetch operation is in progress
+  const isFetchingRef = useRef(false);
+  
   const [formData, setFormData] = useState<FormData>({
     value: "",
     label: "",
@@ -51,9 +55,13 @@ export default function MenuManagement() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Only attempt to load if authentication is confirmed
+      // Prevent concurrent fetch operations
+      if (isFetchingRef.current) return;
+      
+      // Only attempt to load if authenticated
       if (isAuthenticated) {
         try {
+          isFetchingRef.current = true;
           setError(null);
           const success = await fetchMenuItems();
 
@@ -65,10 +73,18 @@ export default function MenuManagement() {
           }
         } catch (err) {
           console.error("Failed to load menu items:", err);
-          setError(
-            err instanceof Error ? err.message : "Failed to load menu items"
-          );
+          // Handle auth errors
+          if (err instanceof Error && 
+              (err.message === "Not authenticated" || 
+               err.message === "Session expired")) {
+            setError("Your session has expired. Please sign in again.");
+          } else {
+            setError(
+              err instanceof Error ? err.message : "Failed to load menu items"
+            );
+          }
         } finally {
+          isFetchingRef.current = false;
           setInitialLoadAttempted(true);
         }
       } else if (!isAuthenticated) {
@@ -144,6 +160,7 @@ export default function MenuManagement() {
     setIsAddingItem(false);
   };
 
+  // Update the handleSubmit function to handle token-based auth
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -164,8 +181,10 @@ export default function MenuManagement() {
       }
       resetForm();
     } catch (err) {
-      // Handle auth errors specially
-      if (err instanceof Error && err.message.includes("Not authenticated")) {
+      // Handle auth errors consistently
+      if (err instanceof Error && 
+          (err.message === "Not authenticated" || 
+           err.message === "Session expired")) {
         alert("Your session has expired. Please log in again.");
         navigate("/signin");
       } else {
@@ -174,6 +193,7 @@ export default function MenuManagement() {
     }
   };
 
+  // Update handleDelete similarly
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this menu item?")) {
       return;
@@ -189,8 +209,10 @@ export default function MenuManagement() {
       await deleteMenuItem(id);
       alert("Menu item deleted successfully");
     } catch (err) {
-      // Handle auth errors specially
-      if (err instanceof Error && err.message.includes("Not authenticated")) {
+      // Handle auth errors consistently
+      if (err instanceof Error && 
+          (err.message === "Not authenticated" || 
+           err.message === "Session expired")) {
         alert("Your session has expired. Please log in again.");
         navigate("/signin");
       } else {
