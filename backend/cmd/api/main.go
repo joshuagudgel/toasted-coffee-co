@@ -211,6 +211,7 @@ func main() {
 	// Global middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	log.Printf("Allowed origins: %s", os.Getenv("ALLOW_ORIGINS"))
 	r.Use(custommiddleware.CORS(cfg.AllowOrigins))
 
 	// Routes
