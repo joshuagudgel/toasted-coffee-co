@@ -24,9 +24,9 @@ export default function PackageManagement() {
     deletePackage,
   } = usePackages();
 
-  const { isAuthenticated, apiRequest } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   // Track if a fetch operation is in progress
   const isFetchingRef = useRef(false);
 
@@ -51,7 +51,7 @@ export default function PackageManagement() {
     const loadData = async () => {
       // Prevent concurrent fetch operations
       if (isFetchingRef.current) return;
-      
+
       // Only attempt to load if authenticated
       if (isAuthenticated) {
         try {
@@ -68,9 +68,11 @@ export default function PackageManagement() {
         } catch (err) {
           console.error("Failed to load packages:", err);
           // Handle auth errors
-          if (err instanceof Error && 
-              (err.message === "Not authenticated" || 
-               err.message === "Session expired")) {
+          if (
+            err instanceof Error &&
+            (err.message === "Not authenticated" ||
+              err.message === "Session expired")
+          ) {
             setError("Your session has expired. Please sign in again.");
           } else {
             setError(
@@ -198,9 +200,11 @@ export default function PackageManagement() {
       resetForm();
     } catch (err) {
       // Handle auth errors consistently
-      if (err instanceof Error && 
-          (err.message === "Not authenticated" || 
-           err.message === "Session expired")) {
+      if (
+        err instanceof Error &&
+        (err.message === "Not authenticated" ||
+          err.message === "Session expired")
+      ) {
         alert("Your session has expired. Please log in again.");
         navigate("/signin");
       } else {
@@ -225,9 +229,11 @@ export default function PackageManagement() {
       alert("Package deleted successfully");
     } catch (err) {
       // Handle auth errors consistently
-      if (err instanceof Error && 
-          (err.message === "Not authenticated" || 
-           err.message === "Session expired")) {
+      if (
+        err instanceof Error &&
+        (err.message === "Not authenticated" ||
+          err.message === "Session expired")
+      ) {
         alert("Your session has expired. Please log in again.");
         navigate("/signin");
       } else {
