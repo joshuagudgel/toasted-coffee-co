@@ -2,16 +2,31 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
+	"log"
 )
 
 // CORS adds CORS headers to responses
 func CORS(allowOrigins string) func(next http.Handler) http.Handler {
 	origins := strings.Split(allowOrigins, ",")
 
-	// Trim whitespace from each origin
-	for i, origin := range origins {
-		origins[i] = strings.TrimSpace(origin)
+	// Force HTTPS for non-localhost origins in production
+	if os.Getenv("ENVIRONMENT") == "production" {
+		for i, origin := range origins {
+			origin = strings.TrimSpace(origin)
+			if !strings.Contains(origin, "localhost") && strings.HasPrefix(origin, "http:") {
+				origins[i] = "https:" + strings.TrimPrefix(origin, "http:")
+				log.Printf("Converted origin from HTTP to HTTPS: %s -> %s", origin, origins[i])
+			} else {
+				origins[i] = origin
+			}
+		}
+	} else {
+		// Just trim whitespace in development
+		for i, origin := range origins {
+			origins[i] = strings.TrimSpace(origin)
+		}
 	}
 
 	return func(next http.Handler) http.Handler {

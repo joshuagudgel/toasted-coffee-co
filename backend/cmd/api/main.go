@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/httprate" // Add this import
+	"github.com/go-chi/httprate"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/config"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/database"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/handlers"
@@ -209,9 +209,10 @@ func main() {
 	r := chi.NewRouter()
 
 	// Global middleware
+	r.Use(custommiddleware.SecureHTTPS)
+	r.Use(custommiddleware.SecurityHeaders)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	log.Printf("Allowed origins: %s", os.Getenv("ALLOW_ORIGINS"))
 	r.Use(custommiddleware.CORS(cfg.AllowOrigins))
 
 	// Routes
