@@ -10,12 +10,21 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="absolute top-0 left-0 z-[100] w-full py-4 px-6">
-      <div className="container mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <div className="text-2xl font-bold text-mocha">TOASTED COFFEE CO</div>
-
+      <div className="container mx-auto flex items-center justify-end">
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
+          <button
+            className="ml-2 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
+            onClick={() => scrollToSection("packages")}
+          >
+            Packages
+          </button>
+          <button
+            className="ml-2 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
+            onClick={() => scrollToSection("menu")}
+          >
+            Menu
+          </button>
           <button
             className="ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
             onClick={() => {
@@ -75,13 +84,6 @@ const Navbar: React.FC = () => {
               onClick={() => scrollToSection("menu")}
             >
               Menu
-            </a>
-            <a
-              href="#"
-              className="text-center ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"
-              onClick={() => scrollToSection("contact")}
-            >
-              Contact
             </a>
             <button
               className="text-center ml-4 px-4 py-2 bg-parchment text-mocha rounded-full font-medium hover:bg-latte transition"

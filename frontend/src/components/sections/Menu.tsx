@@ -1,5 +1,6 @@
 import React from "react";
 import { useMenu } from "../../context/MenuContext";
+import toastedLogo from "../../assets/toasted-logo.png";
 
 const Menu: React.FC = () => {
   const { coffeeOptions, milkOptions, loading } = useMenu();
@@ -19,9 +20,13 @@ const Menu: React.FC = () => {
       <div className="container mx-auto px-4 relative z-[20] text-center">
         {/* Menu content card */}
         <div className="mt-12 mx-auto max-w-4xl px-4 bg-parchment rounded-xl p-8 shadow-lg relative z-[30]">
-          <h2 className="text-3xl md:text-4xl font-bold text-mocha mb-4 tracking-tight">
-            TOASTED COFFEE CO
-          </h2>
+          <div className="flex justify-center mb-4">
+            <img
+              src={toastedLogo}
+              alt="TOASTED COFFEE CO"
+              className="h-16 md:h-20"
+            />
+          </div>
           <p className="text-base text-espresso max-w-xl mx-auto mb-10">
             We source only the highest quality beans for our signature cold
             brew. Choose from our specialty flavors and milk options for a

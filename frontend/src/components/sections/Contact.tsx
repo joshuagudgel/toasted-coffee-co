@@ -16,10 +16,11 @@ const Contact: React.FC = () => {
               <h3 className="text-xl font-bold text-mocha mb-2">Contact Us</h3>
               <p className="text-espresso">toastedcoffeeco@gmail.com</p>
               <p className="text-espresso">(805)858-8171</p>
+              <p className="text-espresso">IG: @toastedcoffeco</p>
             </div>
           </div>
 
-          <div className="border-t border-latte pt-6 mt-8">
+          <div className="border-t border-espresso border-opacity-60 pt-6 mt-8">
             <p className="text-sm text-espresso">
               © {new Date().getFullYear()} Toasted Coffee Co. All rights
               reserved.
