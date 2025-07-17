@@ -24,7 +24,7 @@ const Menu: React.FC = () => {
             <img
               src={toastedLogo}
               alt="TOASTED COFFEE CO"
-              className="h-16 md:h-20"
+              className="h-40 md:h-60"
             />
           </div>
           <p className="text-base text-espresso max-w-xl mx-auto mb-10">
