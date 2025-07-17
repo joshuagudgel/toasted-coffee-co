@@ -24,6 +24,7 @@ func NewEmailService() *EmailService {
 	// Read configuration from environment variables
 	smtpHost := os.Getenv("SMTP_HOST")
 	if smtpHost == "" {
+		log.Println("WARNING: SMTP host not set in environment variables")
 		smtpHost = "smtp.gmail.com" // Default to Gmail
 	}
 
@@ -31,7 +32,7 @@ func NewEmailService() *EmailService {
 
 	smtpUser := os.Getenv("SMTP_USER")
 	if smtpUser == "" {
-		smtpUser = "joshuabgudgel@gmail.com"
+		log.Println("WARNING: SMTP user not set in environment variables")
 	}
 
 	smtpPass := os.Getenv("SMTP_PASSWORD")
@@ -41,7 +42,7 @@ func NewEmailService() *EmailService {
 
 	toEmail := os.Getenv("NOTIFICATION_EMAIL")
 	if toEmail == "" {
-		toEmail = "joshuabgudgel@gmail.com"
+		log.Println("WARNING: Notification email not set in environment variables")
 	}
 
 	// Create the dialer
