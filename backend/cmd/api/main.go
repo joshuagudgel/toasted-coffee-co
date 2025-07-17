@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -142,6 +143,130 @@ func main() {
 			log.Printf("Warning: Migration 8 error: %v", err)
 		} else {
 			log.Println("Migration 8 executed successfully")
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
+	workingDir, _ := os.Getwd()
+	log.Printf("Current working directory: %s", workingDir)
+	log.Printf("Attempting to read migration from: %s", filepath.Join(workingDir, "internal/database/migrations/09_add_bookings_outdoor_details.sql"))
+
+	// Check if the file exists before trying to read it
+	if _, err := os.Stat(filepath.Join(workingDir, "internal/database/migrations/09_add_bookings_outdoor_details.sql")); os.IsNotExist(err) {
+		log.Printf("WARNING: Migration file does not exist at expected path")
+	}
+
+	log.Println("Checking database schema information...")
+	var tableSchema string
+	var tableExists bool
+	err = db.Pool.QueryRow(context.Background(), `
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'bookings'
+    )
+`).Scan(&tableExists)
+	if err != nil {
+		log.Printf("Error checking if bookings table exists: %v", err)
+	} else {
+		log.Printf("Bookings table exists: %v", tableExists)
+
+		if tableExists {
+			err = db.Pool.QueryRow(context.Background(), `
+            SELECT table_schema FROM information_schema.tables 
+            WHERE table_name = 'bookings' LIMIT 1
+        `).Scan(&tableSchema)
+			if err != nil {
+				log.Printf("Error getting bookings table schema: %v", err)
+			} else {
+				log.Printf("Bookings table schema: %s", tableSchema)
+			}
+
+			// Also check the column structure
+			var columns []string
+			rows, err := db.Pool.Query(context.Background(), `
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'bookings' 
+            ORDER BY ordinal_position
+        `)
+			if err != nil {
+				log.Printf("Error fetching column info: %v", err)
+			} else {
+				defer rows.Close()
+				for rows.Next() {
+					var col string
+					rows.Scan(&col)
+					columns = append(columns, col)
+				}
+				log.Printf("Existing columns: %v", columns)
+			}
+		}
+	}
+
+	// Then load and execute your migration as before
+	migrationSQL9, err := os.ReadFile("internal/database/migrations/09_add_bookings_outdoor_details.sql")
+	if err == nil {
+		// Modify your migration to use the correct schema
+		migrationContent := string(migrationSQL9)
+		if tableSchema != "" {
+			// If we found the schema, add it explicitly to ensure correct targeting
+			migrationContent = strings.ReplaceAll(
+				migrationContent,
+				"ALTER TABLE bookings",
+				fmt.Sprintf("ALTER TABLE %s.bookings", tableSchema))
+			log.Printf("Updated migration to target schema: %s", tableSchema)
+		}
+
+		// Execute the migration
+		_, err := db.Pool.Exec(context.Background(), migrationContent)
+		if err != nil {
+			log.Printf("Warning: Migration 9 error: %v", err)
+		} else {
+			log.Println("Migration 9 executed successfully")
+
+			// Verify the new columns were added
+			var columnsAfter []string
+			rows, err := db.Pool.Query(context.Background(), `
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'bookings' 
+            ORDER BY ordinal_position
+        `)
+			if err != nil {
+				log.Printf("Error fetching post-migration column info: %v", err)
+			} else {
+				defer rows.Close()
+				for rows.Next() {
+					var col string
+					rows.Scan(&col)
+					columnsAfter = append(columnsAfter, col)
+				}
+				log.Printf("Columns after migration: %v", columnsAfter)
+
+				// Specifically check for our new columns
+				hasOutdoor := false
+				hasShade := false
+				for _, col := range columnsAfter {
+					if col == "is_outdoor" {
+						hasOutdoor = true
+					}
+					if col == "has_shade" {
+						hasShade = true
+					}
+				}
+				log.Printf("New columns present: is_outdoor=%v, has_shade=%v", hasOutdoor, hasShade)
+			}
+		}
+	} else {
+		log.Printf("Warning: Could not read migration file: %v", err)
+	}
+
+	migrationSQL10, err := os.ReadFile("internal/database/migrations/10_update_bookings_outdoor_details.sql")
+	if err == nil {
+		_, err := db.Pool.Exec(context.Background(), string(migrationSQL10))
+		if err != nil {
+			log.Printf("Warning: Migration 10 error: %v", err)
+		} else {
+			log.Println("Migration 10 executed successfully")
 		}
 	} else {
 		log.Printf("Warning: Could not read migration file: %v", err)

@@ -13,4 +13,6 @@ export interface Booking {
   package?: string;
   createdAt: string;
   archived: boolean;
+  isOutdoor: boolean;
+  hasShade: boolean;
 }

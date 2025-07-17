@@ -510,6 +510,109 @@ export default function BookingDetail() {
             </div>
           )}
 
+          {/* Outdoor Options */}
+          <div className="col-span-2">
+            <dt className="text-sm font-medium text-gray-500">Outdoor Setup</dt>
+            {isEditing ? (
+              <div className="mt-1 space-y-2">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is-outdoor"
+                    name="isOutdoor"
+                    checked={editedBooking.isOutdoor}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setEditedBooking((prev) => {
+                        if (!prev) return null;
+                        // If turning off outdoor, also turn off shade
+                        return {
+                          ...prev,
+                          isOutdoor: checked,
+                          hasShade: checked ? prev.hasShade : false,
+                        };
+                      });
+                    }}
+                    className="h-4 w-4 border-gray-300 rounded mr-2"
+                  />
+                  <label htmlFor="is-outdoor" className="text-gray-700">
+                    Outdoor Event
+                  </label>
+                </div>
+
+                {editedBooking.isOutdoor && (
+                  <div className="flex items-center ml-6">
+                    <input
+                      type="checkbox"
+                      id="has-shade"
+                      name="hasShade"
+                      checked={editedBooking.hasShade}
+                      onChange={(e) => {
+                        setEditedBooking((prev) => {
+                          if (!prev) return null;
+                          return {
+                            ...prev,
+                            hasShade: e.target.checked,
+                          };
+                        });
+                      }}
+                      disabled={!editedBooking.isOutdoor}
+                      className="h-4 w-4 border-gray-300 rounded mr-2"
+                    />
+                    <label htmlFor="has-shade" className="text-gray-700">
+                      Shaded Area Available
+                    </label>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <dd className="mt-1 text-gray-900">
+                {booking.isOutdoor ? (
+                  <>
+                    <div className="flex items-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-green-600 mr-2"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Outdoor Event
+                    </div>
+                    <div className="ml-7 mt-1">
+                      {booking.hasShade ? (
+                        <span className="text-green-600">Shaded area available</span>
+                      ) : (
+                        <span className="text-amber-600">No shade available</span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-blue-600 mr-2"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Indoor Event
+                  </div>
+                )}
+              </dd>
+            )}
+          </div>
+
           {/* Notes */}
           <div className="col-span-2">
             <dt className="text-sm font-medium text-gray-500">Notes</dt>

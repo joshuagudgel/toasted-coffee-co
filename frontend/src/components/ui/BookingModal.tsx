@@ -13,6 +13,8 @@ type BookingFormData = {
   location: string;
   notes: string;
   package?: string;
+  isOutdoor: boolean;
+  hasShade: boolean;
 };
 
 type BookingModalProps = {
@@ -55,6 +57,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
     location: "",
     notes: "",
     package: selectedPackage || "",
+    isOutdoor: false,
+    hasShade: false,
   });
 
   const handleCheckBoxChange = (
@@ -89,6 +93,15 @@ const BookingModal: React.FC<BookingModalProps> = ({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxToggle = (field: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: !prev[field as keyof BookingFormData],
+      // If turning off outdoor, also turn off shade
+      ...(field === "isOutdoor" && !prev.isOutdoor === false ? { hasShade: false } : {})
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,7 +161,9 @@ const BookingModal: React.FC<BookingModalProps> = ({
         milkOptions: [],
         location: "",
         notes: "",
-        package: "", // Or keep selectedPackage if you want
+        package: "",
+        isOutdoor: false,
+        hasShade: false,
       });
 
       onClose();
@@ -359,6 +374,40 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-terracotta"
               ></textarea>
+            </div>
+
+            {/* Add this within your form */}
+            <div className="md:col-span-2">
+              <div className="bg-white p-3 rounded-md border border-gray-300">
+                <div className="flex items-center mb-3">
+                  <input
+                    type="checkbox"
+                    id="is-outdoor"
+                    checked={formData.isOutdoor}
+                    onChange={() => handleCheckboxToggle("isOutdoor")}
+                    className="h-4 w-4 text-terracotta border-gray-300 rounded focus:ring-terracotta mr-2"
+                  />
+                  <label htmlFor="is-outdoor" className="text-espresso font-medium">
+                    This event will be outdoors
+                  </label>
+                </div>
+                
+                {formData.isOutdoor && (
+                  <div className="ml-6 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="has-shade"
+                      checked={formData.hasShade}
+                      onChange={() => handleCheckboxToggle("hasShade")}
+                      disabled={!formData.isOutdoor}
+                      className="h-4 w-4 text-terracotta border-gray-300 rounded focus:ring-terracotta mr-2"
+                    />
+                    <label htmlFor="has-shade" className="text-espresso">
+                      The outdoor area will have shade
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
 
             {selectedPackage && selectedPackage.length > 0 && (

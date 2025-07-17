@@ -34,11 +34,13 @@ func (r *BookingRepository) Create(ctx context.Context, booking *models.Booking)
 
 	var id int
 	err = r.db.Pool.QueryRow(ctx, `
-        INSERT INTO bookings (name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, archived)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        INSERT INTO bookings (name, email, phone, date, time, people, location, notes, 
+                             coffee_flavors, milk_options, package, archived, is_outdoor, has_shade)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING id
     `, booking.Name, booking.Email, booking.Phone, parsedDate, booking.Time, booking.People, booking.Location,
-		booking.Notes, booking.CoffeeFlavors, booking.MilkOptions, booking.Package, booking.Archived).Scan(&id)
+		booking.Notes, booking.CoffeeFlavors, booking.MilkOptions, booking.Package, booking.Archived,
+		booking.IsOutdoor, booking.HasShade).Scan(&id)
 
 	if err != nil {
 		return 0, err
@@ -54,13 +56,14 @@ func (r *BookingRepository) GetByID(ctx context.Context, id int) (*models.Bookin
 	var dateTime time.Time
 
 	err := r.db.Pool.QueryRow(ctx, `
-        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at, archived
+        SELECT id, name, email, phone, date, time, people, location, notes, 
+               coffee_flavors, milk_options, package, created_at, archived, is_outdoor, has_shade
         FROM bookings 
         WHERE id = $1
     `, id).Scan(
 		&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &dateTime, &booking.Time, &booking.People,
 		&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
-		&booking.Package, &booking.CreatedAt, &booking.Archived,
+		&booking.Package, &booking.CreatedAt, &booking.Archived, &booking.IsOutdoor, &booking.HasShade,
 	)
 
 	if err != nil {
@@ -81,7 +84,8 @@ func (r *BookingRepository) GetAll(ctx context.Context, includeArchived bool) ([
 	log.Println("Starting GetAll query...")
 
 	query := `
-        SELECT id, name, email, phone, date, time, people, location, notes, coffee_flavors, milk_options, package, created_at, archived 
+        SELECT id, name, email, phone, date, time, people, location, notes, 
+               coffee_flavors, milk_options, package, created_at, archived, is_outdoor, has_shade
         FROM bookings
     `
 	if !includeArchived {
@@ -111,7 +115,7 @@ func (r *BookingRepository) GetAll(ctx context.Context, includeArchived bool) ([
 		err := rows.Scan(
 			&booking.ID, &booking.Name, &booking.Email, &booking.Phone, &dateTime, &booking.Time, &booking.People,
 			&booking.Location, &booking.Notes, &booking.CoffeeFlavors, &booking.MilkOptions,
-			&booking.Package, &booking.CreatedAt, &booking.Archived,
+			&booking.Package, &booking.CreatedAt, &booking.Archived, &booking.IsOutdoor, &booking.HasShade,
 		)
 		if err != nil {
 			log.Printf("Error scanning row %d: %v", rowNum, err)
@@ -162,14 +166,14 @@ func (r *BookingRepository) Update(ctx context.Context, id int, booking *models.
 	}
 
 	commandTag, err := r.db.Pool.Exec(ctx, `
-        UPDATE bookings 
-        SET name = $1, email = $2, phone = $3, date = $4, time = $5, 
-            people = $6, location = $7, notes = $8, coffee_flavors = $9, 
-            milk_options = $10, package = $11, archived = $12
-        WHERE id = $13
-    `, booking.Name, booking.Email, booking.Phone, parsedDate, booking.Time,
+    UPDATE bookings 
+    SET name = $1, email = $2, phone = $3, date = $4, time = $5, 
+        people = $6, location = $7, notes = $8, coffee_flavors = $9, 
+        milk_options = $10, package = $11, archived = $12, is_outdoor = $13, has_shade = $14
+    WHERE id = $15
+`, booking.Name, booking.Email, booking.Phone, parsedDate, booking.Time,
 		booking.People, booking.Location, booking.Notes, booking.CoffeeFlavors,
-		booking.MilkOptions, booking.Package, booking.Archived, id)
+		booking.MilkOptions, booking.Package, booking.Archived, booking.IsOutdoor, booking.HasShade, id)
 
 	if err != nil {
 		return err
