@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
 // Make this exportable so middleware can use it
@@ -38,6 +39,11 @@ type Claims struct {
 var secretKey []byte
 
 func init() {
+	// Load the .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	}
 	// Load the secret key from environment
 	secretKeyStr := os.Getenv("JWT_SECRET")
 	if secretKeyStr == "" {
