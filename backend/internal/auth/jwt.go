@@ -35,8 +35,11 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// Initialize secretKey safely
+// Global variables
 var secretKey []byte
+var refreshSecretKey []byte
+var tokenExpiry time.Duration
+var refreshTokenExpiry time.Duration
 
 func init() {
 	// Load the .env file
@@ -47,20 +50,58 @@ func init() {
 	// Load the secret key from environment
 	secretKeyStr := os.Getenv("JWT_SECRET")
 	if secretKeyStr == "" {
-		// In production, we would use log.Fatal, but for dev/test environments,
-		// we'll use a warning and generate a random key
+		// TODO: remove
 		log.Println("WARNING: JWT_SECRET environment variable not set! Using a random key for this session.")
-		log.Println("This is insecure for production. Please set a proper JWT_SECRET environment variable.")
 
 		// Generate a random key for this session
 		randomKey := uuid.New().String()
 		secretKey = []byte(randomKey)
 	} else {
 		secretKey = []byte(secretKeyStr)
+		log.Printf("JWT secret key configured with length: %d bytes", len(secretKey))
 	}
 
-	// Log the key length but not the actual key
-	log.Printf("JWT secret key configured with length: %d bytes", len(secretKey))
+	// Add this for refreshSecretKey
+	refreshSecretKeyStr := os.Getenv("JWT_REFRESH_SECRET")
+	if refreshSecretKeyStr == "" {
+		log.Println("WARNING: JWT_REFRESH_SECRET environment variable not set! Using same key as JWT_SECRET.")
+		refreshSecretKey = secretKey
+	} else {
+		refreshSecretKey = []byte(refreshSecretKeyStr)
+		log.Printf("JWT refresh secret key configured with length: %d bytes", len(refreshSecretKey))
+	}
+
+	// Parse token expiry from environment
+	tokenExpiryStr := os.Getenv("TOKEN_EXPIRY")
+	if tokenExpiryStr == "" {
+		log.Println("WARNING: TOKEN_EXPIRY not set, defaulting to 15m")
+		tokenExpiry = 15 * time.Minute
+	} else {
+		parsed, err := time.ParseDuration(tokenExpiryStr)
+		if err != nil {
+			log.Printf("WARNING: Invalid TOKEN_EXPIRY format: %v, defaulting to 15m", err)
+			tokenExpiry = 15 * time.Minute
+		} else {
+			tokenExpiry = parsed
+		}
+	}
+	log.Printf("Access token expiry set to: %s", tokenExpiry)
+
+	// Parse refresh token expiry from environment
+	refreshTokenExpiryStr := os.Getenv("REFRESH_TOKEN_EXPIRY")
+	if refreshTokenExpiryStr == "" {
+		log.Println("WARNING: REFRESH_TOKEN_EXPIRY not set, defaulting to 7d")
+		refreshTokenExpiry = 7 * 24 * time.Hour
+	} else {
+		parsed, err := time.ParseDuration(refreshTokenExpiryStr)
+		if err != nil {
+			log.Printf("WARNING: Invalid REFRESH_TOKEN_EXPIRY format: %v, defaulting to 7d", err)
+			refreshTokenExpiry = 7 * 24 * time.Hour
+		} else {
+			refreshTokenExpiry = parsed
+		}
+	}
+	log.Printf("Refresh token expiry set to: %s", refreshTokenExpiry)
 }
 
 // Token generation and validation functions
@@ -76,7 +117,7 @@ func GenerateToken(userID int, role string) (string, error) {
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    "toasted-coffee-co",
@@ -161,9 +202,8 @@ func GenerateRefreshToken(userID int) (string, error) {
 	// Create unique token ID for revocation capability
 	tokenID := uuid.New().String()
 
-	// Shorter expiration for refresh tokens (3 days instead of 7)
 	refreshClaims := jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(3 * 24 * time.Hour)), // 3 days
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshTokenExpiry)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 		Issuer:    "toasted-coffee-co",
@@ -174,7 +214,7 @@ func GenerateRefreshToken(userID int) (string, error) {
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 
-	return refreshToken.SignedString(secretKey)
+	return refreshToken.SignedString(refreshSecretKey)
 }
 
 func ValidateRefreshToken(tokenString string) (int, error) {
@@ -183,7 +223,7 @@ func ValidateRefreshToken(tokenString string) (int, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return secretKey, nil
+		return refreshSecretKey, nil
 	})
 
 	if err != nil {
