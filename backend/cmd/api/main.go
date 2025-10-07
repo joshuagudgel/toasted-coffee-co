@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -19,6 +21,12 @@ import (
 	custommiddleware "github.com/joshuagudgel/toasted-coffee/backend/internal/middleware"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/services"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	serviceStartTime = time.Now()
+	lastHealthCheck  time.Time
+	healthCheckCount int64
 )
 
 func main() {
@@ -401,11 +409,129 @@ func main() {
 
 	// Health check with minimal rate limiting
 	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-		log.Println("Health check endpoint hit")
-	})
+		startTime := time.Now()
+		healthCheckCount++
 
+		// Log detailed request information
+		log.Printf("HEALTH CHECK #%d: Started at %v", healthCheckCount, startTime)
+		log.Printf("HEALTH CHECK: Method=%s, URL=%s, RemoteAddr=%s, UserAgent=%s",
+			r.Method, r.URL.String(), r.RemoteAddr, r.Header.Get("User-Agent"))
+		log.Printf("HEALTH CHECK: Headers: %+v", r.Header)
+
+		// Detect if this might be a wake-up after sleep
+		if !lastHealthCheck.IsZero() {
+			timeSinceLastCheck := startTime.Sub(lastHealthCheck)
+			if timeSinceLastCheck > 2*time.Minute {
+				log.Printf("HEALTH CHECK: POTENTIAL WAKE-UP DETECTED - Last check was %v ago", timeSinceLastCheck)
+			}
+		}
+		lastHealthCheck = startTime
+
+		// Prepare response data
+		response := map[string]interface{}{
+			"status":         "healthy",
+			"timestamp":      startTime.Format(time.RFC3339),
+			"uptime":         startTime.Sub(serviceStartTime).String(),
+			"check_count":    healthCheckCount,
+			"environment":    os.Getenv("ENVIRONMENT"),
+			"go_version":     runtime.Version(),
+			"num_goroutines": runtime.NumGoroutine(),
+		}
+
+		// Memory stats
+		var memStats runtime.MemStats
+		runtime.ReadMemStats(&memStats)
+		response["memory"] = map[string]interface{}{
+			"alloc_mb":       memStats.Alloc / 1024 / 1024,
+			"total_alloc_mb": memStats.TotalAlloc / 1024 / 1024,
+			"sys_mb":         memStats.Sys / 1024 / 1024,
+			"num_gc":         memStats.NumGC,
+		}
+
+		// Database health check with timeout
+		dbCtx, dbCancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer dbCancel()
+
+		dbCheckStart := time.Now()
+		if err := db.Pool.Ping(dbCtx); err != nil {
+			log.Printf("HEALTH CHECK: Database ping FAILED: %v", err)
+			response["database"] = map[string]interface{}{
+				"status":        "failed",
+				"error":         err.Error(),
+				"response_time": time.Since(dbCheckStart).String(),
+			}
+			response["status"] = "unhealthy"
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+
+			if jsonErr := json.NewEncoder(w).Encode(response); jsonErr != nil {
+				log.Printf("HEALTH CHECK: Failed to encode JSON response: %v", jsonErr)
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			log.Printf("HEALTH CHECK: FAILED - Total time: %v", time.Since(startTime))
+			return
+		}
+
+		// Test database query
+		var dbResult int
+		queryStart := time.Now()
+		if err := db.Pool.QueryRow(dbCtx, "SELECT 1").Scan(&dbResult); err != nil {
+			log.Printf("HEALTH CHECK: Database query FAILED: %v", err)
+			response["database"] = map[string]interface{}{
+				"status":     "query_failed",
+				"error":      err.Error(),
+				"ping_time":  time.Since(dbCheckStart).String(),
+				"query_time": time.Since(queryStart).String(),
+			}
+			response["status"] = "unhealthy"
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(response)
+
+			log.Printf("HEALTH CHECK: FAILED - Total time: %v", time.Since(startTime))
+			return
+		}
+
+		// Database is healthy
+		response["database"] = map[string]interface{}{
+			"status":       "healthy",
+			"ping_time":    time.Since(dbCheckStart).String(),
+			"query_time":   time.Since(queryStart).String(),
+			"query_result": dbResult,
+		}
+
+		// Add database connection pool stats if available
+		if stats := db.Pool.Stat(); stats != nil {
+			response["database_pool"] = map[string]interface{}{
+				"total_conns":    stats.TotalConns(),
+				"acquired_conns": stats.AcquiredConns(),
+				"idle_conns":     stats.IdleConns(),
+				"max_conns":      stats.MaxConns(),
+			}
+		}
+
+		// Add request processing time
+		response["response_time"] = time.Since(startTime).String()
+
+		// Set response headers
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Health-Check-Count", fmt.Sprintf("%d", healthCheckCount))
+		w.Header().Set("X-Uptime", startTime.Sub(serviceStartTime).String())
+		w.WriteHeader(http.StatusOK)
+
+		// Encode and send response
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Printf("HEALTH CHECK: Failed to encode successful response: %v", err)
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("HEALTH CHECK: SUCCESS - Total time: %v", time.Since(startTime))
+	})
 	// DB check with minimal rate limiting
 	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/api/v1/db-check", func(w http.ResponseWriter, r *http.Request) {
 		// Test basic connectivity
