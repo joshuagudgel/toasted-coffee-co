@@ -533,6 +533,23 @@ func main() {
 
 		log.Printf("HEALTH CHECK: SUCCESS - Total time: %v", time.Since(startTime))
 	})
+
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("PING: Simple ping received from %s at %v", r.RemoteAddr, time.Now())
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		response := map[string]interface{}{
+			"status":    "ok",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"uptime":    time.Since(serviceStartTime).String(),
+		}
+
+		json.NewEncoder(w).Encode(response)
+		log.Printf("PING: Response sent successfully")
+	})
+
 	// DB check with minimal rate limiting
 	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/api/v1/db-check", func(w http.ResponseWriter, r *http.Request) {
 		// Test basic connectivity
