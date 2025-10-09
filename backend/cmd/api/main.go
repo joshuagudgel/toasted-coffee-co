@@ -23,6 +23,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Global variables for health check
 var (
 	serviceStartTime = time.Now()
 	lastHealthCheck  time.Time
@@ -408,7 +409,7 @@ func main() {
 	})
 
 	// Health check with minimal rate limiting
-	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/health", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		healthCheckCount++
 
