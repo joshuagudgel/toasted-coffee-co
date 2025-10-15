@@ -357,6 +357,26 @@ func main() {
 	contactHandler := handlers.NewContactHandler(emailService)
 
 	// Initialize router
+	mainRouter := chi.NewRouter()
+
+	// Monitoring sub-router without rate limiting
+	monitorRouter := chi.NewRouter()
+	monitorRouter.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":    "ok",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"uptime":    time.Since(serviceStartTime).String(),
+		})
+	})
+	monitorRouter.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	})
+
+	// API sub-router with rate limiting and authentication
 	r := chi.NewRouter()
 
 	// Monitoring endpoints
@@ -440,10 +460,14 @@ func main() {
 		})
 	})
 
+	// Mount sub-routers on main router
+	mainRouter.Mount("/", monitorRouter) // Monitoring endpoints at root level
+	mainRouter.Mount("/api", r)          // API endpoints under /api
+
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Printf("Server starting on %s", addr)
-	if err := http.ListenAndServe(addr, r); err != nil {
+	if err := http.ListenAndServe(addr, mainRouter); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
