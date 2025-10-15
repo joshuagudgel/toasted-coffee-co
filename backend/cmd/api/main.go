@@ -441,8 +441,8 @@ func main() {
 	})
 
 	// Mount sub-routers on main router
-	mainRouter.Mount("/", monitorRouter) // Monitoring endpoints at root level
-	mainRouter.Mount("/api", r)          // API endpoints under /api
+	mainRouter.Mount("/", monitorRouter)
+	mainRouter.Mount("/", r)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.Port)
