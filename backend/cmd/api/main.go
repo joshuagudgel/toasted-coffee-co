@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -21,6 +20,24 @@ import (
 	custommiddleware "github.com/joshuagudgel/toasted-coffee/backend/internal/middleware"
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/services"
 	"golang.org/x/crypto/bcrypt"
+)
+
+// Constants
+const (
+	// --- Rate Limits ---
+	// Public endpoints
+	PublicReadLimit  = 100 // requests per minute
+	PublicWriteLimit = 10  // requests per minute
+	ContactLimit     = 5   // requests per minute (spam protection)
+
+	// Authentication
+	AuthLimit = 20 // requests per minute
+
+	// Admin/Protected endpoints
+	AdminLimit = 200 // requests per minute (higher for legitimate admin use)
+
+	// Special endpoints
+	HealthCheckLimit = 60 // requests per minute (monitoring tools)
 )
 
 // Global variables for health check
@@ -342,24 +359,24 @@ func main() {
 	// Initialize router
 	r := chi.NewRouter()
 
-	r.Route("/monitor", func(r chi.Router) {
-		// NO middleware = NO rate limiting
-		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-			// Your existing health check code here
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status":    "ok",
-				"timestamp": time.Now().Format(time.RFC3339),
-				"uptime":    time.Since(serviceStartTime).String(),
-			})
+	// Monitoring endpoints
+	// Simple health check endpoint without rate limiting
+	// This is useful for uptime monitoring services that need quick checks
+	// and should not be blocked by rate limits
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		// Your existing health check code here
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":    "ok",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"uptime":    time.Since(serviceStartTime).String(),
 		})
-
-		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-		})
+	})
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
 	// Global middleware
@@ -371,209 +388,56 @@ func main() {
 
 	// Routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Auth endpoints
+		// Public read-only endpoints
 		r.Group(func(r chi.Router) {
-			r.Use(httprate.LimitByIP(20, 1*time.Minute))
-			r.Post("/auth/login", authHandler.Login)
-			r.Post("/auth/refresh", authHandler.RefreshToken)
-			r.Post("/auth/logout", authHandler.Logout)
-		})
-
-		// Booking creation - limit to 10 requests per minute
-		// This prevents spam bookings while allowing legitimate use
-		r.With(httprate.LimitByIP(10, 1*time.Minute)).Post("/bookings", bookingHandler.Create)
-
-		// Contact/inquiry endpoint - limit to 5 requests per minute
-		// This is more restricted since it's a common target for spam
-		r.With(httprate.LimitByIP(5, 1*time.Minute)).Post("/contact", contactHandler.HandleInquiry)
-
-		// Public read-only endpoints - higher limits (30 per minute)
-		// These are less sensitive and used more frequently by legitimate users
-		r.Group(func(r chi.Router) {
-			r.Use(httprate.LimitByIP(30, 1*time.Minute))
+			r.Use(httprate.LimitByIP(PublicReadLimit, 1*time.Minute))
 			r.Get("/menu", menuHandler.GetAll)
 			r.Get("/menu/{type}", menuHandler.GetByType)
 			r.Get("/packages", packageHandler.GetAll)
 		})
 
-		// Protected routes - admin functions with JWT auth
+		// Public write endpoints (more restrictive)
+		r.Group(func(r chi.Router) {
+			r.Use(httprate.LimitByIP(PublicWriteLimit, 1*time.Minute))
+			r.Post("/bookings", bookingHandler.Create)
+		})
+
+		// Contact endpoint (most restrictive)
+		r.With(httprate.LimitByIP(ContactLimit, 1*time.Minute)).
+			Post("/contact", contactHandler.HandleInquiry)
+
+		// Authentication endpoints
+		r.Group(func(r chi.Router) {
+			r.Use(httprate.LimitByIP(AuthLimit, 1*time.Minute))
+			r.Post("/auth/login", authHandler.Login)
+			r.Post("/auth/refresh", authHandler.RefreshToken)
+			r.Post("/auth/logout", authHandler.Logout)
+		})
+
+		// Protected admin endpoints
 		r.Group(func(r chi.Router) {
 			r.Use(custommiddleware.JWTAuth)
+			r.Use(httprate.LimitByIP(AdminLimit, 1*time.Minute))
 
-			// You can also rate limit protected routes, but with higher thresholds
-			// This prevents API abuse even from authenticated users
-			r.Use(httprate.LimitByIP(60, 1*time.Minute))
-
-			// Bookings management
+			// All admin endpoints inherit the AdminLimit
 			r.Get("/bookings", bookingHandler.GetAll)
 			r.Get("/bookings/{id}", bookingHandler.GetByID)
-			r.Delete("/bookings/{id}", bookingHandler.Delete)
 			r.Put("/bookings/{id}", bookingHandler.Update)
+			r.Delete("/bookings/{id}", bookingHandler.Delete)
 			r.Post("/bookings/{id}/archive", bookingHandler.Archive)
 			r.Post("/bookings/{id}/unarchive", bookingHandler.Unarchive)
 
-			// Menu management
 			r.Post("/menu", menuHandler.Create)
 			r.Put("/menu/{id}", menuHandler.Update)
 			r.Delete("/menu/{id}", menuHandler.Delete)
 
-			// Package management
 			r.Post("/packages", packageHandler.Create)
 			r.Get("/packages/{id}", packageHandler.GetByID)
 			r.Put("/packages/{id}", packageHandler.Update)
 			r.Delete("/packages/{id}", packageHandler.Delete)
 
-			// Auth validation
 			r.Get("/auth/validate", authHandler.ValidateToken)
 		})
-	})
-
-	// Health check with minimal rate limiting
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now()
-		healthCheckCount++
-
-		// Log detailed request information
-		log.Printf("HEALTH CHECK #%d: Started at %v", healthCheckCount, startTime)
-		log.Printf("HEALTH CHECK: Method=%s, URL=%s, RemoteAddr=%s, UserAgent=%s",
-			r.Method, r.URL.String(), r.RemoteAddr, r.Header.Get("User-Agent"))
-		log.Printf("HEALTH CHECK: Headers: %+v", r.Header)
-
-		// Detect if this might be a wake-up after sleep
-		if !lastHealthCheck.IsZero() {
-			timeSinceLastCheck := startTime.Sub(lastHealthCheck)
-			if timeSinceLastCheck > 2*time.Minute {
-				log.Printf("HEALTH CHECK: POTENTIAL WAKE-UP DETECTED - Last check was %v ago", timeSinceLastCheck)
-			}
-		}
-		lastHealthCheck = startTime
-
-		// Prepare response data
-		response := map[string]interface{}{
-			"status":         "healthy",
-			"timestamp":      startTime.Format(time.RFC3339),
-			"uptime":         startTime.Sub(serviceStartTime).String(),
-			"check_count":    healthCheckCount,
-			"environment":    os.Getenv("ENVIRONMENT"),
-			"go_version":     runtime.Version(),
-			"num_goroutines": runtime.NumGoroutine(),
-		}
-
-		// Memory stats
-		var memStats runtime.MemStats
-		runtime.ReadMemStats(&memStats)
-		response["memory"] = map[string]interface{}{
-			"alloc_mb":       memStats.Alloc / 1024 / 1024,
-			"total_alloc_mb": memStats.TotalAlloc / 1024 / 1024,
-			"sys_mb":         memStats.Sys / 1024 / 1024,
-			"num_gc":         memStats.NumGC,
-		}
-
-		// Database health check with timeout
-		dbCtx, dbCancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer dbCancel()
-
-		dbCheckStart := time.Now()
-		if err := db.Pool.Ping(dbCtx); err != nil {
-			log.Printf("HEALTH CHECK: Database ping FAILED: %v", err)
-			response["database"] = map[string]interface{}{
-				"status":        "failed",
-				"error":         err.Error(),
-				"response_time": time.Since(dbCheckStart).String(),
-			}
-			response["status"] = "unhealthy"
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-
-			if jsonErr := json.NewEncoder(w).Encode(response); jsonErr != nil {
-				log.Printf("HEALTH CHECK: Failed to encode JSON response: %v", jsonErr)
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
-				return
-			}
-
-			log.Printf("HEALTH CHECK: FAILED - Total time: %v", time.Since(startTime))
-			return
-		}
-
-		// Test database query
-		var dbResult int
-		queryStart := time.Now()
-		if err := db.Pool.QueryRow(dbCtx, "SELECT 1").Scan(&dbResult); err != nil {
-			log.Printf("HEALTH CHECK: Database query FAILED: %v", err)
-			response["database"] = map[string]interface{}{
-				"status":     "query_failed",
-				"error":      err.Error(),
-				"ping_time":  time.Since(dbCheckStart).String(),
-				"query_time": time.Since(queryStart).String(),
-			}
-			response["status"] = "unhealthy"
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(response)
-
-			log.Printf("HEALTH CHECK: FAILED - Total time: %v", time.Since(startTime))
-			return
-		}
-
-		// Database is healthy
-		response["database"] = map[string]interface{}{
-			"status":       "healthy",
-			"ping_time":    time.Since(dbCheckStart).String(),
-			"query_time":   time.Since(queryStart).String(),
-			"query_result": dbResult,
-		}
-
-		// Add database connection pool stats if available
-		if stats := db.Pool.Stat(); stats != nil {
-			response["database_pool"] = map[string]interface{}{
-				"total_conns":    stats.TotalConns(),
-				"acquired_conns": stats.AcquiredConns(),
-				"idle_conns":     stats.IdleConns(),
-				"max_conns":      stats.MaxConns(),
-			}
-		}
-
-		// Add request processing time
-		response["response_time"] = time.Since(startTime).String()
-
-		// Set response headers
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("X-Health-Check-Count", fmt.Sprintf("%d", healthCheckCount))
-		w.Header().Set("X-Uptime", startTime.Sub(serviceStartTime).String())
-		w.WriteHeader(http.StatusOK)
-
-		// Encode and send response
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			log.Printf("HEALTH CHECK: Failed to encode successful response: %v", err)
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-			return
-		}
-
-		log.Printf("HEALTH CHECK: SUCCESS - Total time: %v", time.Since(startTime))
-	})
-
-	// DB check with minimal rate limiting
-	r.With(httprate.LimitByIP(10, 1*time.Minute)).Get("/api/v1/db-check", func(w http.ResponseWriter, r *http.Request) {
-		// Test basic connectivity
-		if err := db.Pool.Ping(r.Context()); err != nil {
-			log.Printf("Database ping failed: %v", err)
-			http.Error(w, "Database connection error", http.StatusInternalServerError)
-			return
-		}
-
-		// Test a simple query
-		var result int
-		err := db.Pool.QueryRow(r.Context(), "SELECT 1").Scan(&result)
-		if err != nil || result != 1 {
-			log.Printf("Database query test failed: %v", err)
-			http.Error(w, "Database query error", http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Database connection OK"))
 	})
 
 	// Start server
