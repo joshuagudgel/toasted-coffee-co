@@ -387,7 +387,7 @@ func main() {
 	r.Use(custommiddleware.CORS(cfg.AllowOrigins))
 
 	// Routes
-	r.Route("/api/v1", func(r chi.Router) {
+	r.Route("/v1", func(r chi.Router) {
 		// Public read-only endpoints
 		r.Group(func(r chi.Router) {
 			r.Use(httprate.LimitByIP(PublicReadLimit, 1*time.Minute))
@@ -441,8 +441,8 @@ func main() {
 	})
 
 	// Mount sub-routers on main router
-	mainRouter.Mount("/", monitorRouter)
-	mainRouter.Mount("/", r)
+	mainRouter.Mount("/", monitorRouter) // Health/ping at root level
+	mainRouter.Mount("/api", r)          // API routes under /api prefix
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.Port)
