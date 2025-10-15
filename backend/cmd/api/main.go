@@ -379,26 +379,6 @@ func main() {
 	// API sub-router with rate limiting and authentication
 	r := chi.NewRouter()
 
-	// Monitoring endpoints
-	// Simple health check endpoint without rate limiting
-	// This is useful for uptime monitoring services that need quick checks
-	// and should not be blocked by rate limits
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		// Your existing health check code here
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":    "ok",
-			"timestamp": time.Now().Format(time.RFC3339),
-			"uptime":    time.Since(serviceStartTime).String(),
-		})
-	})
-	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-	})
-
 	// Global middleware
 	r.Use(custommiddleware.SecureHTTPS)
 	r.Use(custommiddleware.SecurityHeaders)
