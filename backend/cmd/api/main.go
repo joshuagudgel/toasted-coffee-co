@@ -342,6 +342,26 @@ func main() {
 	// Initialize router
 	r := chi.NewRouter()
 
+	r.Route("/monitor", func(r chi.Router) {
+		// NO middleware = NO rate limiting
+		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+			// Your existing health check code here
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"status":    "ok",
+				"timestamp": time.Now().Format(time.RFC3339),
+				"uptime":    time.Since(serviceStartTime).String(),
+			})
+		})
+
+		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		})
+	})
+
 	// Global middleware
 	r.Use(custommiddleware.SecureHTTPS)
 	r.Use(custommiddleware.SecurityHeaders)
@@ -532,22 +552,6 @@ func main() {
 		}
 
 		log.Printf("HEALTH CHECK: SUCCESS - Total time: %v", time.Since(startTime))
-	})
-
-	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("PING: Simple ping received from %s at %v", r.RemoteAddr, time.Now())
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
-		response := map[string]interface{}{
-			"status":    "ok",
-			"timestamp": time.Now().Format(time.RFC3339),
-			"uptime":    time.Since(serviceStartTime).String(),
-		}
-
-		json.NewEncoder(w).Encode(response)
-		log.Printf("PING: Response sent successfully")
 	})
 
 	// DB check with minimal rate limiting
