@@ -370,10 +370,55 @@ func main() {
 			"uptime":    time.Since(serviceStartTime).String(),
 		})
 	})
-	monitorRouter.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+
+	monitorRouter.Get("/ping-simple", func(w http.ResponseWriter, r *http.Request) {
+		// No database calls, no external dependencies
+		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		w.Write([]byte("pong"))
+	})
+
+	monitorRouter.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		requestTime := time.Now()
+
+		// Log every ping request with detailed info
+		log.Printf("PING REQUEST: time=%v, ip=%s, user_agent=%s, headers=%+v",
+			requestTime.Format(time.RFC3339),
+			r.RemoteAddr,
+			r.Header.Get("User-Agent"),
+			r.Header)
+
+		// Check if this is coming from cron-job.org
+		userAgent := r.Header.Get("User-Agent")
+		if strings.Contains(strings.ToLower(userAgent), "cron") {
+			log.Printf("PING: CRON JOB DETECTED - UserAgent: %s", userAgent)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Ping-Time", requestTime.Format(time.RFC3339))
+		w.WriteHeader(http.StatusOK)
+
+		response := map[string]string{
+			"status":    "ok",
+			"timestamp": requestTime.Format(time.RFC3339),
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Printf("PING ERROR: Failed to encode response: %v", err)
+		} else {
+			log.Printf("PING SUCCESS: Response sent in %v", time.Since(requestTime))
+		}
+	})
+
+	// Used to check Render's rate limiting
+	monitorRouter.Get("/test-render", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("RENDER TEST: Request received at %v", time.Now())
+
+		// Ultra-simple response to rule out app complexity
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+
+		log.Printf("RENDER TEST: Response sent")
 	})
 
 	// API sub-router with rate limiting and authentication
