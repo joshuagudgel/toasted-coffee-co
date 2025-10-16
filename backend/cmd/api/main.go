@@ -43,8 +43,6 @@ const (
 // Global variables for health check
 var (
 	serviceStartTime = time.Now()
-	lastHealthCheck  time.Time
-	healthCheckCount int64
 )
 
 func main() {
