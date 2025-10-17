@@ -7,28 +7,17 @@ import (
 	"github.com/joshuagudgel/toasted-coffee/backend/internal/models"
 )
 
-// MenuRepository handles database operations for menu items
-type MenuRepository interface {
-	GetAll(ctx context.Context) ([]models.MenuItem, error)
-	GetByType(ctx context.Context, itemType models.ItemType) ([]models.MenuItem, error)
-	Create(ctx context.Context, item *models.MenuItem) (int, error)
-	Update(ctx context.Context, id int, item *models.MenuItem) error
-	Delete(ctx context.Context, id int) error
-}
-
-type menuRepository struct {
+type MenuRepository struct {
 	db *DB
 }
 
 // NewMenuRepository creates a new menu repository
-func NewMenuRepository(db *DB) MenuRepository {
-	return &menuRepository{
-		db: db,
-	}
+func NewMenuRepository(db *DB) MenuRepositoryInterface {
+	return &MenuRepository{db: db}
 }
 
 // Implementation of repository methods
-func (r *menuRepository) GetAll(ctx context.Context) ([]models.MenuItem, error) {
+func (r *MenuRepository) GetAll(ctx context.Context) ([]models.MenuItem, error) {
 	rows, err := r.db.Pool.Query(ctx, `
         SELECT id, value, label, type, active, created_at, updated_at
         FROM menu_items
@@ -57,7 +46,7 @@ func (r *menuRepository) GetAll(ctx context.Context) ([]models.MenuItem, error) 
 }
 
 // GetByType retrieves menu items of a specific type
-func (r *menuRepository) GetByType(ctx context.Context, itemType models.ItemType) ([]models.MenuItem, error) {
+func (r *MenuRepository) GetByType(ctx context.Context, itemType models.ItemType) ([]models.MenuItem, error) {
 	rows, err := r.db.Pool.Query(ctx, `
         SELECT id, value, label, type, active, created_at, updated_at
         FROM menu_items
@@ -88,7 +77,7 @@ func (r *menuRepository) GetByType(ctx context.Context, itemType models.ItemType
 }
 
 // Create adds a new menu item
-func (r *menuRepository) Create(ctx context.Context, item *models.MenuItem) (int, error) {
+func (r *MenuRepository) Create(ctx context.Context, item *models.MenuItem) (int, error) {
 	var id int
 	err := r.db.Pool.QueryRow(ctx, `
         INSERT INTO menu_items (value, label, type, active)
@@ -104,7 +93,7 @@ func (r *menuRepository) Create(ctx context.Context, item *models.MenuItem) (int
 }
 
 // Update modifies an existing menu item
-func (r *menuRepository) Update(ctx context.Context, id int, item *models.MenuItem) error {
+func (r *MenuRepository) Update(ctx context.Context, id int, item *models.MenuItem) error {
 	tag, err := r.db.Pool.Exec(ctx, `
         UPDATE menu_items
         SET value = $1, label = $2, type = $3, active = $4, updated_at = CURRENT_TIMESTAMP
@@ -124,7 +113,7 @@ func (r *menuRepository) Update(ctx context.Context, id int, item *models.MenuIt
 }
 
 // Delete removes a menu item
-func (r *menuRepository) Delete(ctx context.Context, id int) error {
+func (r *MenuRepository) Delete(ctx context.Context, id int) error {
 	tag, err := r.db.Pool.Exec(ctx, `
         DELETE FROM menu_items
         WHERE id = $1
