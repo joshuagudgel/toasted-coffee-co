@@ -13,7 +13,7 @@ import (
 )
 
 type AuthHandler struct {
-	userRepo *database.UserRepository
+	userRepo *database.UserRepositoryInterface
 }
 
 type LoginRequest struct {
@@ -35,7 +35,7 @@ type RefreshResponse struct {
 	AccessToken string `json:"accessToken"`
 }
 
-func NewAuthHandler(userRepo *database.UserRepository) *AuthHandler {
+func NewAuthHandler(userRepo *database.UserRepositoryInterface) *AuthHandler {
 	return &AuthHandler{userRepo: userRepo}
 }
 

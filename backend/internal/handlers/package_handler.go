@@ -12,11 +12,11 @@ import (
 
 // PackageHandler handles requests related to packages
 type PackageHandler struct {
-	repo database.PackageRepository
+	repo database.PackageRepositoryInterface
 }
 
 // NewPackageHandler creates a new package handler
-func NewPackageHandler(repo database.PackageRepository) *PackageHandler {
+func NewPackageHandler(repo database.PackageRepositoryInterface) *PackageHandler {
 	return &PackageHandler{repo: repo}
 }
 
