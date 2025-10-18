@@ -17,7 +17,7 @@ type BookingRepository struct {
 }
 
 // NewBookingRepository creates a new booking repository
-func NewBookingRepository(db *DB) *BookingRepository {
+func NewBookingRepository(db *DB) BookingRepositoryInterface {
 	return &BookingRepository{db: db}
 }
 

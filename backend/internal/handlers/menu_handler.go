@@ -12,14 +12,12 @@ import (
 
 // MenuHandler handles HTTP requests for menu items
 type MenuHandler struct {
-	repo database.MenuRepository
+	repo database.MenuRepositoryInterface
 }
 
 // NewMenuHandler creates a new menu handler
-func NewMenuHandler(repo database.MenuRepository) *MenuHandler {
-	return &MenuHandler{
-		repo: repo,
-	}
+func NewMenuHandler(repo database.MenuRepositoryInterface) *MenuHandler {
+	return &MenuHandler{repo: repo}
 }
 
 // GetAll returns all menu items

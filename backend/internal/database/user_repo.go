@@ -10,7 +10,8 @@ type UserRepository struct {
 	db *DB
 }
 
-func NewUserRepository(db *DB) *UserRepository {
+// NewUserRepository creates a new menu repository
+func NewUserRepository(db *DB) UserRepositoryInterface {
 	return &UserRepository{db: db}
 }
 
