@@ -1,17 +1,29 @@
 ﻿# Toasted Coffee Co
 
 Cold brew coffee bar catering service
+
 Customer View:
 https://toasted-coffee-frontend.onrender.com/
+
 Administrator View:
 https://toasted-coffee-admin.onrender.com/
+
+## Project Features
+
+- Booking Management: Create, view, edit, and archive coffee bar bookings
+- Menu Management: Manage coffee flavors, milk options, and packages
+- User Authentication: JWT-based admin authentication
+- Email Notifications: Automated booking confirmations
+- Responsive Design: Mobile-friendly customer and admin interfaces
+- Database Persistence: PostgreSQL with automated migrations
+- Development Hot Reload: Automatic restart on code changes
 
 ## Project Structure
 
 - `frontend/`: React application built with TypeScript and Express
 
   - **Frontend Stack**: React, TypeScript, Express
-  - **Purpose**: Customer-facing website for booking coffee bar services
+  - **Purpose**: Customer-facing website for booking coffee catering services
   - **Dev Server**: Runs on http://localhost:5173
 
 - `admin-frontend/`: React application built with TypeScript and Express
@@ -35,7 +47,7 @@ https://toasted-coffee-admin.onrender.com/
 
 **Environment Setup:**
 
-**Create root `.env` file** in the project root directory:
+1. **Create root `.env` file** in the project root directory:
 
 ```env
 # Database Configuration
@@ -54,11 +66,28 @@ JWT_SECRET=your-production-jwt-secret-here
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 ```
 
-\*\*
+2. **Create backend-specific .env** in "./backend/.env":
+
+```env
+# Backend Application Settings
+ENVIRONMENT=development
+JWT_REFRESH_SECRET=your-secure-refresh-token-secret
+TOKEN_EXPIRY=15m
+REFRESH_TOKEN_EXPIRY=168h
+
+# Email Configuration (Optional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+NOTIFICATION_EMAIL=bookings@toasted-coffee.com
+```
 
 # Start all services (PostgreSQL, Backend, Frontend, Admin)
 
+```bash
 docker-compose -f docker-compose.dev.yml up --build
+```
 
 # Access Applications:
 
@@ -69,12 +98,13 @@ API Health Check: http://localhost:8080/health
 
 # Stop all services
 
+```bash
 docker-compose -f docker-compose.dev.yml down
+```
 
 # Common Docker commands
 
-'''
-
+```bash
 # Stop all services
 
 docker-compose -f docker-compose.dev.yml down
@@ -98,12 +128,11 @@ docker-compose -f docker-compose.dev.yml up --build
 # Check service status
 
 docker-compose -f docker-compose.dev.yml ps
-'''
+```
 
 # Database Operations:
 
-'''
-
+```bash
 # Connect to PostgreSQL
 
 docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres -d toasted_coffee
@@ -119,12 +148,11 @@ docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres -d toast
 # Exit PostgreSQL
 
 \q
-'''
+```
 
 # Troubleshooting:
 
-'''
-
+```bash
 # Check container status
 
 docker-compose -f docker-compose.dev.yml ps
@@ -145,4 +173,4 @@ docker-compose -f docker-compose.dev.yml exec backend env | grep DATABASE
 # Test database connection
 
 docker-compose -f docker-compose.dev.yml exec postgres pg_isready -U postgres
-'''
+```
