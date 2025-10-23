@@ -6,6 +6,10 @@ export default defineConfig({
     react()
   ],
   server: {
+    host: '0.0.0.0',
     port: 5174, // Different from main frontend (5173)
+    watch: {
+      usePolling: true
+    }
   },
 });

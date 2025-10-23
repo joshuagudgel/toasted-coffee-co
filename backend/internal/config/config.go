@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -22,8 +21,13 @@ func Load() (*Config, error) {
 	// Set default values
 	config := &Config{
 		Port:         getEnv("PORT", "8080"),
-		DatabaseURL:  buildDatabaseURL(),
-		AllowOrigins: getEnv("ALLOW_ORIGINS", "http://localhost:5173"),
+		DatabaseURL:  getEnv("DATABASE_URL", ""),
+		AllowOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:5173"),
+	}
+
+	// Validate required DATABASE_URL
+	if config.DatabaseURL == "" {
+		panic("DATABASE_URL environment variable is required")
 	}
 
 	return config, nil
@@ -35,17 +39,4 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-}
-
-// Build the database URL from individual environment variables
-func buildDatabaseURL() string {
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "5432")
-	user := getEnv("DB_USER", "postgres")
-	password := getEnv("DB_PASSWORD", "password")
-	dbname := getEnv("DB_NAME", "toasted_coffee")
-	sslmode := getEnv("DB_SSLMODE", "disable")
-
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		host, port, user, password, dbname, sslmode)
 }

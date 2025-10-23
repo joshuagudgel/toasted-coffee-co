@@ -28,66 +28,121 @@ https://toasted-coffee-admin.onrender.com/
 
 ## Development Setup
 
-### Prerequisites
+**Prerequisites:**
 
-- Node.js 18+
-- Go 1.22+
-- PostgreSQL 14+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- Git
 
-### Backend
+**Environment Setup:**
 
-Create a `.env` file in the backend directory with the following variables:
-
-```env
-PORT=8080
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=toasted_coffee
-DB_SSLMODE=disable
-ALLOW_ORIGINS=http://localhost:5173,http://localhost:5174
-JWT_SECRET=your-token-secret
-JWT_REFRESH_SECRET=your-secure-refresh-token-secret
-TOKEN_EXPIRY=15m
-REFRESH_TOKEN_EXPIRY=7d
-ENVIRONMENT=development
-```
-
-If you'd like to use the email service then include these variables as well.
+**Create root `.env` file** in the project root directory:
 
 ```env
-SMTP_HOST=smtp.gmail.com
-SMTP_USER=youremail@gmail.com
-SMTP_PASSWORD=your-password
-NOTIFICATION_EMAIL=youremail@gmail.com
+# Database Configuration
+POSTGRES_DB=toasted_coffee
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_PORT=5432
+
+# Service Ports
+API_PORT=8080
+FRONTEND_PORT=5173
+ADMIN_PORT=5174
+
+# Application Secrets
+JWT_SECRET=your-production-jwt-secret-here
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 ```
 
-1. Create the Database
+\*\*
 
-```bash
-psql -U postgres -c "CREATE DATABASE toasted_coffee;"
-```
+# Start all services (PostgreSQL, Backend, Frontend, Admin)
 
-2. Start the Server
+docker-compose -f docker-compose.dev.yml up --build
 
-```bash
-cd backend
-go run cmd/api/main.go
-```
+# Access Applications:
 
-### Frontend
+Customer Frontend: http://localhost:5173
+Admin Dashboard: http://localhost:5174
+Backend API: http://localhost:8080
+API Health Check: http://localhost:8080/health
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+# Stop all services
 
-### Admin Frontend
+docker-compose -f docker-compose.dev.yml down
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+# Common Docker commands
+
+'''
+
+# Stop all services
+
+docker-compose -f docker-compose.dev.yml down
+
+# Restart specific service (after code changes)
+
+docker-compose -f docker-compose.dev.yml restart backend
+docker-compose -f docker-compose.dev.yml restart admin-frontend
+
+# View logs
+
+docker-compose -f docker-compose.dev.yml logs
+docker-compose -f docker-compose.dev.yml logs backend
+docker-compose -f docker-compose.dev.yml logs -f # Follow logs
+
+# Fresh start (clears database)
+
+docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.dev.yml up --build
+
+# Check service status
+
+docker-compose -f docker-compose.dev.yml ps
+'''
+
+# Database Operations:
+
+'''
+
+# Connect to PostgreSQL
+
+docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres -d toasted_coffee
+
+# Check tables
+
+docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres -d toasted_coffee -c "\dt"
+
+# View booking data
+
+docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres -d toasted_coffee -c "SELECT \* FROM bookings;"
+
+# Exit PostgreSQL
+
+\q
+'''
+
+# Troubleshooting:
+
+'''
+
+# Check container status
+
+docker-compose -f docker-compose.dev.yml ps
+
+# View specific service logs
+
+docker-compose -f docker-compose.dev.yml logs backend | grep ERROR
+
+# Rebuild specific service
+
+docker-compose -f docker-compose.dev.yml build backend
+docker-compose -f docker-compose.dev.yml up backend
+
+# Check environment variables
+
+docker-compose -f docker-compose.dev.yml exec backend env | grep DATABASE
+
+# Test database connection
+
+docker-compose -f docker-compose.dev.yml exec postgres pg_isready -U postgres
+'''
