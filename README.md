@@ -16,7 +16,6 @@ https://toasted-coffee-admin.onrender.com/
 - Email Notifications: Automated booking confirmations
 - Responsive Design: Mobile-friendly customer and admin interfaces
 - Database Persistence: PostgreSQL with automated migrations
-- Development Hot Reload: Automatic restart on code changes
 
 ## Project Structure
 
