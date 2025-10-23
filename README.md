@@ -2,12 +2,6 @@
 
 Cold brew coffee bar catering service
 
-Customer View:
-https://toasted-coffee-frontend.onrender.com/
-
-Administrator View:
-https://toasted-coffee-admin.onrender.com/
-
 ## Project Features
 
 - Booking Management: Create, view, edit, and archive coffee bar bookings
