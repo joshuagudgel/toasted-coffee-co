@@ -2,6 +2,8 @@
 
 Cold brew coffee bar catering service
 
+![Toasted Coffee Co Landing Page](readme-images/landing-page.png)
+
 ## Project Features
 
 - Booking Management: Create, view, edit, and archive coffee bar bookings
@@ -19,11 +21,15 @@ Cold brew coffee bar catering service
   - **Purpose**: Customer-facing website for booking coffee catering services
   - **Dev Server**: Runs on http://localhost:5173
 
+![Toasted Coffee Co Ordering Modal](readme-images/order-modal.png)
+
 - `admin-frontend/`: React application built with TypeScript and Express
 
   - **Admin Stack**: React, TypeScript, Express
   - **Purpose**: Administration portal for managing bookings, inventory, and services
   - **Dev Server**: Runs on http://localhost:5174
+
+![Toasted Coffee Co Admin Booking View](readme-images/booking-details-view.png)
 
 - `backend/`: Go with PostgreSQL database
   - **Backend Stack**: Go, PostgreSQL
